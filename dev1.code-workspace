@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.configureSettings": {},
+		"files.exclude": {
+			"**/.git": false
+		}
+	}
+}

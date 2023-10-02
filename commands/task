@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#set -x #uncomment for debugging
+
+suite=$(cat $DEV1_USER_DATA/suite)
+task=$1
+repository_name=$2
+
+if [ "$task" == "" ]; then
+  if [[ -e $DEV1_USER_DATA/task ]]; then
+    task=$(cat $DEV1_USER_DATA/task)
+  fi
+fi
+if [[ -d $DEV1_SUITES/$suite/tasks/$task ]]; then
+  echo $task >$DEV1_USER_DATA/task
+  cd $DEV1_SUITES/$suite/tasks/$task
+fi
+
+if [[ ! "$repository_name" = "" ]]; then
+  if [[ -e $DEV1_SUITES_${suite}/tasks/${task} ]]; then
+    cd  $DEV1_SUITES_${suite}/tasks/${task}
+  fi
+fi

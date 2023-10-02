@@ -1,0 +1,15 @@
+#!/bin/bash
+# suites, tasks and repository names have 
+# only lower case letters numbers, underscores
+# no spaces or hyphens
+# task names may not be suite names and vice versa
+# repository names may be suite or task names
+
+function validate_name_f() {
+  name=$1
+  if [[  "$name" != "" ]] && [[ "$name" =~ ^[a-z][a-z0-9_-]*$ ]]; then
+    return 0
+  else
+    return 1
+  fi
+}

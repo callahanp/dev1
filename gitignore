@@ -1,0 +1,3 @@
+build/**
+templates/**
+src/__pycache__/**

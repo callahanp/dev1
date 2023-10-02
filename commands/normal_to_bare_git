@@ -1,0 +1,18 @@
+
+source $DEV1_COMMANDS/suite "$1" 
+cd $DEV1_SUITES/$suite/repositories
+mkdir temp
+for $d in *; do
+  cd $d
+  if [[ ! $(git config --get --bool core.bare) ]]; then
+    mkdir ../temp
+    mv .git ../temp/$d.git
+    cd ../
+    rm -rf $d
+    mv temp/$d.git ./
+    cd $d.git
+    git config --bool core.bare true
+  fi
+done
+exit
+mv $suite/.git temp/$suite.git # renaming just for clarity

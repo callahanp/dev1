@@ -1,0 +1,67 @@
+#!/bin/bash
+#set -x
+restore_dir=$(pwd)
+SCRIPT_PATH="${BASH_SOURCE}"
+while [ -L "${SCRIPT_PATH}" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "${SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+  SCRIPT_PATH="$(readlink "${SCRIPT_PATH}")"
+  [[ ${SCRIPT_PATH} != /* ]] && SCRIPT_PATH="${SCRIPT_DIR}/${SCRIPT_PATH}"
+done
+SCRIPT_PATH="$(readlink -f "${SCRIPT_PATH}")"
+SCRIPT_DIR="$(cd -P "$(dirname -- "${SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+# SCRIPT_DIR is guaranteed to be the directory where this script lives
+# no matter where you call it from, or how you got to it.
+cd ${SCRIPT_DIR}
+# This should leave us at the top level of dev1 - No matter what.
+#set -x
+echo "starting dev1rc"
+export DEV1=$(pwd)
+if [[ "$DEV1_SUITES" == "" ]]; then
+    echo "Unable to find DEV1 suites.  "
+    echo "Please define and export DEV1_SUITES in your ~/.bashrc"
+    echo " or place DEV1 in a directory named suites"
+    return 
+fi
+export DEV1_COMMANDS=$DEV1/commands
+export DEV1_HELPERS=$DEV1/helpers
+export DEV1_SRC=$DEV1/src
+export DEV1_USER_DATA=~/.dev1
+export DEV1_CURRENT_WORK_task_FILE=$DEV1_USER_DATA/task
+if [ ! -e "$DEV1_CURRENT_WORK_task_FILE"  ] || [ "$(cat $DEV1_CURRENT_WORK_task_FILE)" == "" ]; then
+  mkdir -p ~/.dev1
+  echo "dev1" >$DEV1_CURRENT_WORK_task_FILE
+fi
+cd $DEV1
+alias suites="cd $(pwd)/..; ls ./"
+alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"
+alias build="f(){ source $(pwd)/commands/build \$@; unset -f f; }; f"
+alias run="f(){ source $(pwd)/commands/run \$@;unset -f f; }; f"
+alias debug="f(){ source $(pwd)/commands/run \$@ debug ; unset -f f; }; f"
+alias suite="f(){ source $(pwd)/commands/suite \$@; unset -f f; }; f"
+alias task="f(){ source $(pwd)/commands/task \$@; unset -f f; }; f"
+alias workspace="f(){ source $(pwd)/commands/workspace \$@; unset -f f; }; f"
+alias status="f(){ source $(pwd)/commands/status \$@; unset -f f; }; f"
+alias app="f(){ source $(pwd)/commands/app \$@; unset -f f; }; f"
+alias bootstrap="f(){ source $(pwd)/commands/bootstrap \$@; unset -f f; }; f"
+alias dev1rc="source $(pwd)/dev1rc"
+
+function copy_alias(){
+alias $2="$(alias $1 |sed -e s/.*=// -e s/\'//g )"
+
+}
+copy_alias task t
+copy_alias suite s
+copy_alias workspace w
+copy_alias ide i
+copy_alias build b
+copy_alias run r
+copy_alias debug g
+copy_alias app m
+
+
+alias suites="cd $DEV1_SUITES; ls -1"
+for d in $(find $DEV1_SUITES -mindepth 1 -maxdepth 1 -type d ); do
+     suite=$(basename $d)
+     alias $suite="source $(pwd)/commands/suite $suite \$@"
+done
+cd $restore_dir

@@ -1,0 +1,28 @@
+
+function set_context(){
+  source $DEV1_HELPERS/list_suites_f
+  source $DEV1_HELPERS/list_tasks_f
+  #source $DEV1_HELPERS/list_suites_and_tasks_f
+  list_suites
+  list_tasks 
+  #list_suites_and_tasks
+
+  if [[ "$1" == "" ]]; then
+    current_suite_and_task=$(cat $DEV0_USER_DATA/current_suite_and_task)
+  fi
+  if [[ ! "$1" == "" && ! "$2" == "" ]]; then
+  re_suite="\<${1}\>" #the value variable is assigned a regex that matches the exact value of the first argument 
+  re_task="\<${2}\>"
+  if [[ ${suites_list[@]} =~ $re_suite && ${tasks_list[@]} =~ $re_task ]]
+    current_suite_and_task="$1/tasks/$2"
+    echo $current_suite_and_task > $DEV0_USER_DATA/current_suite_and_task
+    shift_params=2
+  else 
+    current_suite_and_task=$(cat $DEV0_USER_DATA/current_suite_and_task)
+  fi
+  cd $DEV1_SUITES/$current_suite_and_task
+}
+if [[ "$1" == "test" ]]; then
+  shift
+  set_context $@
+fi

@@ -1,0 +1,14 @@
+# Making a repository for application suites.
+
+## Repository for Dev1 support for an Applicaiton Suite
+
+It's important to distinguish between materials to configure and use Dev1 and source materials on which you unleash Dev1.
+
+Dev1's configuration files and interface scripts, can be placed in a repository.  The scripts and interface scripts then live in a folder under repositories and are subject to the same rules as any other repository. You can do full source control on these files just like any others.  
+
+The bootstrap command initiates the process of creating an application suite and it starts with the suite repository. 
+
+The only file needed is a *.json file with specifications for all the repository clones and standalone .git repositories required.
+
+You can run the bootstrap command from anywhere, and the configuration file you provide will be moved into the right place among the other suites.
+

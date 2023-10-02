@@ -1,0 +1,16 @@
+function list_tasks(){
+  list_tasks_restore_dir=$(pwd)
+  cd $DEV1_SUITES
+  tasks_list=()
+  suites_list=($(shopt -s nullglob; echo *))
+  for d in ${suites_list[@]}; do
+    echo $d 
+    cd $DEV1_SUITES/$d/tasks
+    tasks_list=(${tasks_list[@]} $(shopt -s nullglob; echo *))
+  done
+  cd $list_tasks_restore_dir
+  echo ${tasks_list[@]}
+}
+if [[ "$1" == "test" ]]; then
+list_tasks
+fi

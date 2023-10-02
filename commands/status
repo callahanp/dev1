@@ -1,0 +1,76 @@
+#!/bin/bash
+# set -x
+function has() {
+   count=$(find ./ -iregex $1 |wc -l)
+   file="files"
+   if [[ $count = 1 ]];then
+   file="file"
+   fi
+   if [[ $count > 0 ]];then
+     echo "$tab$tab $count $2 $file"
+   fi
+}
+
+echo Dev0 Environment Variables and Current Project
+tab="    "
+echo
+echo "$tab DEV1:            $DEV1"
+if [[ "$1" == "verbose" ]]; then
+  echo "$tab" DEV1_COMMANDS:    $DEV1_COMMANDS
+  echo "$tab" DEV1_HELPERS:    $DEV1_HELPERS
+  shift
+fi
+
+Application
+source $DEV1_COMMANDS/task $1 $2 $3
+if [[ $? ]]; then
+  echo "$tab Current Suite:      $current_suite"
+  echo "$tab Current Activity:   $current_activity"
+  echo "$tab Current Repository: $current_repository"
+fi
+if [[ "$1" == "brief" ]]; then
+  exit 0
+fi
+echo
+echo "$tab$tab $(tree -a |grep directories, |cat)"
+set -f
+echo "Readme:"
+
+has ".*README.*" 'README.*'
+has ".*README.txt" README.txt
+has ".*README.md" README.md
+has ".*[.]md$" ".md"
+echo 
+echo "CMake:"
+has ".*CMakeLists.txt" CMakeLists.txt 
+echo
+
+echo "C & C++:"
+has ".*[.][ch][cpx]*[cpx]*$" "C or C++"
+echo
+has ".*[.]cpp$" ".cpp"
+has ".*[.]cxx$" ".cxx"
+has ".*[.]c$" ".c"
+has ".*[.]cc$" ".cc"
+has ".*[.]h$" ".h"
+echo "protobuf"
+
+has ".*[.]pb[.]cc$" .pb.cc
+has ".*[.]pb[.]h$" .pb.h
+echo "Nasal:":"
+has ".*[.]nas$" ".nas"
+echo "Python"
+has ".*[.]py$" python
+has ".*[.][xX][mM][lL]$" XML
+has ".*[.]rgb[a]*$" ".rgb & .rgba"
+has ".*[.]png$" .png
+has ".*[.]txf$" .txf
+has ".*[.]dsp$" .dsp
+has ".*[.]wav$" .wav
+has ".*[.]ac$" .ac
+has ".*[.]tar,gz*$" .ac
+has ".*makefile.am$" "Makefile.am"
+#count=$(grep -R '#!/bin/bash'|wc -l)
+echo "$tab$tab $(grep -Icsd skip -e '#!/bin/bash' $(find   -maxdepth 4 -executable )|grep -v "No such file"|wc -l) bash scripts"
+find -name '*[.]*' -type f |sed -e s/^[.][^.]*// -e /[/]/d|sort |uniq -c
+

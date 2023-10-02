@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# set -x #uncomment for debugging
+
+suite=$(cat $DEV1_USER_DATA/suite
+task=$(cat $DEV1_USER_DATA/task
+repository_name=$1
+
+if [[ "$repository_name" = "" ]]; then
+  worktree=$DEV1_SUITES_$suite/worktrees/${task}/{repository_name}
+  if [[ -e $worktree ]]
+    cd $worktree
+  fi
+fi

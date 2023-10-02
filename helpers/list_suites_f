@@ -1,0 +1,10 @@
+function list_suites(){
+  list_suites_restore_dir=$(pwd)
+  cd $DEV1_SUITES
+  suites_list=($(shopt -s nullglob; echo *))
+  cd $list_suites_restore_dir
+  echo ${suites_list[@]}
+}
+if [[ "$1" == "test" ]]; then
+list_suites
+fi

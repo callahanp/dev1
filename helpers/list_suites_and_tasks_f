@@ -1,0 +1,20 @@
+function list_suites_and_tasks(){
+  list_suites_and_tasks_restore_dir=$(pwd)
+  cd $DEV1_SUITES
+  suites_and_tasks_list=()
+  suites_list=($(shopt -s nullglob; echo *))
+  for ds in ${suites_list[@]}; do
+    cd $DEV1_SUITES/$d/tasks
+    tasks_list=($(shopt -s nullglob; echo *))
+    for dt in ${tasks_list[@]}; do
+      suites_and_tasks_list+="$ds/tasks/$dt "
+    done
+    tasks_list=( $(shopt -s nullglob; echo *))
+  done
+  cd $list_suites_and_tasks_restore_dir
+  unset list_suites_and_tasks_restore_dir
+}
+if [[ "$1" == "test" ]]; then
+list_suites_and_tasks
+echo ${suites_and_tasks_list[@]}
+fi

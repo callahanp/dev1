@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# if the project is found, execute the run script in 
+# the project_directory of the project given in $1. 
+# pass the entire list of command line parameters 
+# and options to that script.
+
+# Errors:
+#   - Environment not set for DEV1
+#   - Project not found among the suites
+#   - run script not found in the project
+
+# set -x # uncomment to debug
+source $DEV1_HELPERS/set_context_f
+
+source $DEV1_COMMANDS/suite $1 $2
+if [[ "$shift_params" == "2" ]]; then
+  shift 2
+fi
+if [[ "$shift_params" == "1" ]]; then
+  shift 1
+fi
+if [[ -e run.sh ]]; then
+  ./run.sh  $@
+else 
+  run_script=$(find -L ./ -maxdepth 2 -name run.sh)
+  if [[ ! "run_script" == "" ]]; then
+    $run_script $@
+  fi
+
+fi
+

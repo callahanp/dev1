@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# run visual studio code for the project
+
+# Errors:
+#   - Environment not set for DEV1
+#   - Project not found among the suites
+#   - Project code workspace not found
+# Parameter sets:
+# no-parameters: use previous task
+# set -x #uncomment to debug
+
+source $DEV1_COMMANDS/suite "$1" "$2" "$3"
+if [[ "$task" == "" ]]; then
+   cd $DEV1_SUITES/$suite/repositories/$suite
+fi
+pwd
+if [[ -e $task.code-workspace ]]; then
+  echo "code $task.code-workspace"
+  code $task.code-workspace
+elif [[ -e $suite.code-workspace ]]; then  
+  echo "code $suite.code-workspace"
+  code $suite.code-workspace
+else
+  echo "code ."
+  code .
+
+fi

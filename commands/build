@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# if the suiteis found, execute the build script in 
+# the project_directory of the suitegiven in $1. 
+# pass the entire list of command line parameters 
+# and options to that script.
+
+# Errors:
+#   - Environment not set for DEV1
+#   - Project not found among the suites
+#   - Build script not found in the project
+source $DEV1/commands/suite $1 $2 
+for (( c=0; c<shift_params; c++ )); do 
+  shift 
+done
+dev_dir=$(pwd)/${current_suite}dev
+if [[ -e $dev_dir/build.sh ]]; then
+  $dev_dir/build.sh $@
+elif [[ -e /build.sh ]]; then
+  ./build.sh $@
+fi

@@ -11,18 +11,18 @@
 # set -x #uncomment to debug
 
 source $DEV1_COMMANDS/suite "$1" "$2" "$3"
-if [[ "$task" == "" ]]; then
-   cd $DEV1_SUITES/$suite/repositories/$suite
+if [[ "$current_task" == "" \
+   && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
+   cd $DEV1_SUITES/$current_suite/repositories/$current_suite
 fi
 pwd
-if [[ -e $task.code-workspace ]]; then
-  echo "code $task.code-workspace"
-  code $task.code-workspace
-elif [[ -e $suite.code-workspace ]]; then  
-  echo "code $suite.code-workspace"
-  code $suite.code-workspace
+if [[ -e $current_task.code-workspace ]]; then
+  echo "code $current_task.code-workspace"
+  code $current_task.code-workspace
+elif [[ -e $current_suite.code-workspace ]]; then  
+  echo "code $current_suite.code-workspace"
+  code $current_suite.code-workspace
 else
   echo "code ."
   code .
-
 fi

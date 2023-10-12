@@ -48,12 +48,14 @@ if [[ "$2" == "" ]]; then
   if [[ -e $current_task_dir_file ]]; then
     cd $(cat $current_task_dir_file)
   fi
-  current_task=$(dirname $(pwd))
+  current_task=$(basename $(dirname $(pwd)))
+  echo $current_task
+  echo $(pwd)
   return 0
 fi
 if [[ ! "$2" == "" && -e $DEV1_SUITES/$current_suite/tasks/$2 ]]; then
   shift_params=2
   current_task=$2
-  cd $DEV1_SUITES/$current_suite/tasks/$current_task
+  cd $DEV1_SUITES/$current_suite/tasks/$current_task/$current_suite
   echo $(pwd) > $DEV1_USER_DATA/${current_suite}_task_dir
 fi

@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd -P "$(dirname -- "${SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
 # no matter where you call it from, or how you got to it.
 cd ${SCRIPT_DIR}
 # This should leave us at the top level of dev1 - No matter what.
-#set -x
+
 echo "starting dev1rc"
 export DEV1=$(pwd)
 if [[ "$DEV1_SUITES" == "" ]]; then
@@ -26,11 +26,7 @@ export DEV1_COMMANDS=$DEV1/commands
 export DEV1_HELPERS=$DEV1/helpers
 export DEV1_SRC=$DEV1/src
 export DEV1_USER_DATA=~/.dev1
-export DEV1_CURRENT_WORK_task_FILE=$DEV1_USER_DATA/task
-if [ ! -e "$DEV1_CURRENT_WORK_task_FILE"  ] || [ "$(cat $DEV1_CURRENT_WORK_task_FILE)" == "" ]; then
-  mkdir -p ~/.dev1
-  echo "dev1" >$DEV1_CURRENT_WORK_task_FILE
-fi
+mkdir -p $DEV1_USER_DATA
 cd $DEV1
 alias suites="cd $(pwd)/..; ls ./"
 alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"

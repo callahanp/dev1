@@ -1,0 +1,31 @@
+# this file must be sourced
+#
+# if [[ "$1" == "--show" ]]; then
+#   show=0
+#   shift 1
+# fi
+current_suite_file=$DEV1_USER_DATA/current_suite
+if [[ "$#" == "0" ]]; then 
+  export current_suite=$(cat $current_suite_file)
+  if [[ -e $DEV1_USER_DATA/${current_suite}_task ]]; then
+    export current_task=$(cat $DEV1_USER_DATA/${current_suite}_task)
+  else
+    export current_task="" 
+  fi
+fi
+if [[ "$#" == "1" ]]; then 
+  export current_suite="$1"
+  export current_task=$(cat $DEV1_USER_DATA/${current_suite}_task)
+  echo $current_suite >$DEV1_USER_DATA/current_suite
+fi
+if [[ "$#" == "2" ]]; then 
+  export current_suite="$1"
+  export current_task="$2"
+  echo $current_suite >$DEV1_USER_DATA/current_suite
+  echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+fi
+if [[ -e $DEV1_SUITES/$current_suite/tasks/$current_task ]]; then
+  cd $DEV1_SUITES/$current_suite/tasks/$current_task
+else 
+  cd $DEV1_SUITES/$current_suite
+fi

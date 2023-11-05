@@ -11,6 +11,7 @@
 # set -x #uncomment to debug
 
 source $DEV1_COMMANDS/suite "$1" "$2" "$3"
+echo $current_task
 if [[ "$current_task" == "" \
    && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
    cd $DEV1_SUITES/$current_suite/repositories/$current_suite

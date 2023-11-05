@@ -1,61 +1,13 @@
 #!/bin/bash
 # source only
-# mode 1:
-# source suite 
-#     determine suite from the current directory path 
-#     if pwd is in $DEV1_SUITES. Otherwise, use the suite
-#     recorded in $DEV1_USER_DATA/suite
-#     if there is a current task recorded for the suite
-#     cd $DEV_SUITES/suite-name/tasks/task-name
-#     otherwise 
-#     cd $DEV_SUITES/suite-name/ 
 
-# mode 2:
-# source suite suite-name
-#     if $DEV_SUITES/suite-name exists, that's the suite
-#     if not report error
+set +x
+source $DEV1_COMMANDS/set_current_context $1 $2
 
-# mode 3: not working
-# source suite task-name
-#     if the current directory is a sub-directory of $DEV1_SUITES
-#     and $DEV1_SUITES/[suite-name]/tasks/[task-name] exists set the 
-#     current_task to task-name
+if [[ ! "$2" == "" ]]; then
 
-# mode 4:
-# source suite suite-name task-name
-#     set current suite and task
-#     current_suite per pwd
-# 
-# set -x
-current_suite_file=$DEV1_USER_DATA/current_suite
-shift_params=0
-if [[ "$1" == "" ]]; then
-  if [[ -e $current_suite_file ]]; then
-    current_suite=$(cat $current_suite_file)
-  else
-    echo "No suite given and no file found at $DEV1_USER_DATA/current_suite"
-    return 1
-  fi
-fi
-if [[ ! "$1" == "" && -d $DEV1_SUITES/$1 ]]; then
-  current_suite=$1
-  echo $current_suite > $current_suite_file
-  shift_params=1
-fi
-current_task_dir_file=$DEV1_USER_DATA/${current_suite}_task_dir
-if [[ "$2" == "" ]]; then
-  cd $DEV1_SUITES/$current_suite
-  if [[ -e $current_task_dir_file ]]; then
-    cd $(cat $current_task_dir_file)
-  fi
-  current_task=$(basename $(pwd))
-  echo $current_task
-  echo $(pwd)
-  return 0
-fi
-if [[ ! "$2" == "" && -e $DEV1_SUITES/$current_suite/tasks/$2 ]]; then
-  shift_params=2
-  current_task=$2
+  source $DEV1/commands/task $current_suite $2
   cd $DEV1_SUITES/$current_suite/tasks/$current_task
-  echo $(pwd) > $DEV1_USER_DATA/${current_suite}_task_dir
+  echo $(pwd) > $DEV1_USER_DATA/${current_suite}_task
+  cd $(cat $DEV1_USER_DATA/${current_suite}_task)
 fi

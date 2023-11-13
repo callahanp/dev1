@@ -1,13 +1,19 @@
 #!/bin/bash
 # source only
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "start /work/suites/dev1/worktrees/next/dev1/commands/suite"
+  set -x
+fi
 
-set +x
 source $DEV1_COMMANDS/set_current_context $1 $2
 
 if [[ ! "$2" == "" ]]; then
-
   source $DEV1/commands/task $current_suite $2
-  cd $DEV1_SUITES/$current_suite/tasks/$current_task
-  echo $(pwd) > $DEV1_USER_DATA/${current_suite}_task
-  cd $(cat $DEV1_USER_DATA/${current_suite}_task)
+  echo $current_task >$DEV1_USER_DATA/$current_suite
+fi
+cd $DEV1_SUITES/$current_suite/tasks/$current_task
+
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "end   /work/suites/dev1/worktrees/next/dev1/commands/suite"
+  set +x
 fi

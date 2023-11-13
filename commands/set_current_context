@@ -4,28 +4,112 @@
 #   show=0
 #   shift 1
 # fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "start $DEV1_COMMANDS/set_current_context"
+  set -x
+fi
+# Determine the number of context params before any options to be passed
+arg1="$1"
+arg2="$2"
+arg1c1=${arg1:0:1}
+arg2c1=${arg2:0:1}
+echo $arg1c1 $arg2c1
+if [[ "$arg1c1" == "-" ]];then
+  params=0 
+elif [[  "$arg2c1" == "-" ]];then
+  params=1  
+else
+  params=$(echo "$1 $2 $3" |wc -w)
+fi
+# Determine what the current suite is
 current_suite_file=$DEV1_USER_DATA/current_suite
-if [[ "$#" == "0" ]]; then 
+if [[ "$params" == "0" ]]; then 
   export current_suite=$(cat $current_suite_file)
   if [[ -e $DEV1_USER_DATA/${current_suite}_task ]]; then
-    export current_task=$(cat $DEV1_USER_DATA/${current_suite}_task)
+    export current_task=$(basename $(cat $DEV1_USER_DATA/${current_suite}_task))
   else
     export current_task="" 
   fi
 fi
-if [[ "$#" == "1" ]]; then 
+if [[ "$params" == "1" ]]; then 
   export current_suite="$1"
-  export current_task=$(cat $DEV1_USER_DATA/${current_suite}_task)
-  echo $current_suite >$DEV1_USER_DATA/current_suite
+  current_task_file=$DEV1_USER_DATA/${current_suite}_task
+  if [[ ! -e $current_task_file ]]; then
+    echo "next" > $current_task_file
+  fi
+  export current_task=$(basename $(cat $current_task_file))
+  echo $current_task
 fi
-if [[ "$#" == "2" ]]; then 
+# if a second parameter was provided, it might be a wildcard for an existing task. (no asterisk needed)
+if [[ "$params" == "2" ]]; then 
   export current_suite="$1"
   export current_task="$2"
-  echo $current_suite >$DEV1_USER_DATA/current_suite
-  echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+  wildcard_task="$(ls -1d $DEV1_SUITES/${current_suite}/tasks/${current_task}* 2>/dev/null)"
+  matching_tasks="$(echo $wildcard_task|wc -l)"
+  if [[ -d $DEV1_SUITES/${current_suite}/tasks/$current_task ]]; then
+    echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+    cd $DEV1_SUITES/${current_suite}/tasks/${current_task}
+  elif [[ $matching_tasks == "1" ]]; then # it's either the actual task or the param matched exactly one task
+    export current_task=$(basename $wildcard_task)
+    echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+    cd $DEV1_SUITES/${current_suite}/tasks/$current_task
+  else 
+    echo Error in $DEV1_SUITES/${current_suite}/tasks
+  fi
 fi
-if [[ -e $DEV1_SUITES/$current_suite/tasks/$current_task ]]; then
+if [[ "$matching_tasks" == "0" ]]; then
+    echo ""
+    read -p 'did you want a new task?ls [y/n]' -n 1 -r
+    echo ""
+    if [[ "$REPLY" =~ ^[Nn]$ ]]; then
+      return
+    fi
+fi
+# save the current context params for use as defaults
+echo $current_suite >$DEV1_USER_DATA/current_suite
+echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+
+# Make sure there is a repositories directory for the suite
+repositories_dir=$DEV1_SUITES/$current_suite/repositories
+mkdir -p $repositories_dir
+# If there are no repositories for the suite in it's repostories directory
+# create one by cloning from a personal github repository using the suite name
+# if the personal github repo does not exist this will fail and you will
+# have to create the repo manually, or clone it from github
+if [[ "$(ls -1 $DEV1_SUITES/$current_suite/repositories| wc -l)" == "0" ]]; then
+   cd $repositories_dir
+   git clone --bare git@github.com:$DEV1_GITHUB_USERNAME/${current_suite}.git ${current_suite}.git
+   cd - >/dev/null
+fi
+# Make sure there is a worktrees directory for the suite
+worktrees_dir=$DEV1_SUITES/$current_suite/worktrees
+mkdir -p $worktrees_dir
+# If there are no worktrees for the suite in the worktrees directory
+# create one from the next branch
+# This will fail if there is no next branch
+if [[ "$(ls -1 $worktrees| wc -l)" == "0"  ]]; then
+  cd $repositories/$current_suite.git
+  git worktree add $worktrees_dir/next next
+  cd - >/dev/null
+fi
+
+current_task_dir=$DEV1_SUITES/$current_suite/tasks/$current_task
+mkdir -p $DEV1_SUITES/$current_suite/tasks/$current_task
+
+# if a link to $worktrees_dir/next/$current_suite can be created, go ahead and create one
+
+if [[ ! -L  $current_task_dir/$current_suite && -e $worktrees_dir/next/$current_suite ]]; then
+  ln -s $worktrees_dir/next/$current_suite $current_task_dir/$current_suite
+
+fi
+if [[ -e  $DEV1_SUITES/$current_suite/tasks/$current_task  ]]; then
   cd $DEV1_SUITES/$current_suite/tasks/$current_task
 else 
   cd $DEV1_SUITES/$current_suite
+fi
+echo $current_suite >$DEV1_USER_DATA/current_suite
+echo $current_task >$DEV1_USER_DATA/${current_suite}_task
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "end   $DEV1_COMMANDS/set_current_context"
+  set +x
 fi

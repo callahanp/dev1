@@ -9,8 +9,11 @@
 # Parameter sets:
 # no-parameters: use previous task
 # set -x #uncomment to debug
-
-source $DEV1_COMMANDS/suite "$1" "$2" "$3"
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/ide $@"
+  set -x
+fi
+source $DEV1_COMMANDS/set_current_context "$1" "$2" "$3"
 echo $current_task
 if [[ "$current_task" == "" \
    && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
@@ -26,4 +29,8 @@ elif [[ -e $current_suite.code-workspace ]]; then
 else
   echo "code ."
   code .
+fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "ending   $DEV1/commands/run $@"
+  set +x
 fi

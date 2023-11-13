@@ -1,78 +1,17 @@
 #!/bin/bash
-
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/task $@"
+  set -x
+fi
 #set -x #uncomment for debugging
-source $DEV1_COMMANDS/set_current_context $1 $2
-matching_tasks="$(ls -1d $DEV1_SUITES/${current_suite}/tasks/${task}* 2>/dev/null|wc -l)"
-matching_repositories="$(ls -1d $DEV1_SUITES/${current_suite}/repositories/* 2>/dev/null|wc -l)"
-repository_list="$(ls -1d $DEV1_SUITES/${current_suite}/repositories/* |sed -e 's/.*\///' -e 's/.git//')"
-DEV1_USER_TASK_FILE=$DEV1_USER_DATA/${current_suite}_task
-echo task
-# first take care of new tasks:
-# set +x
-if [[ $matching_tasks == "0" ]]; then
-  echo ""
-  read -p 'did you want a new task?ls [y/n]' -n 1 -r
-  echo ""
-  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-
-    if [[ "$matching_repositories" == "1" ]]; then
-      repository=$repository_list
-      worktrees_dir=$DEV1_SUITES/${current_suite}/worktrees/$current_task
-      worktree_dir=$DEV1_SUITES/${current_suite}/worktrees/$current_task/$repository
-      repository_dir=$DEV1_SUITES/${current_suite}/repositories/$repository.git
-      mkdir -p $DEV1_SUITES/${current_suite}/tasks/$current_task
-      mkdir -p $worktrees_dir
-      cd $repository_dir
-      if [[ ! -e $worktree_dir ]]; then
-        git worktree add -B $current_task $worktree_dir
-      fi
-      link_to_dir=$DEV1_SUITES/${current_suite}/worktrees/$current_task/$repository
-      echo $link_to_dir
-      ln -s  $link_to_dir $DEV1_SUITES/${current_suite}/tasks/$current_task/$current_suite 
-
-    else
-      cat <<EOD
-      
-      This is a multi-root project.  You will need to set up all or selected
-      roots for this branch.
-      
-      You will need to create worktrees for any repositories that should 
-      be on $current_task.
-      
-      You will need to create symlinks in $DEV1_SUITES/${current_suite}/tasks/$current_task 
-      to the $current_task worktree of each repository on the branch.  
-
-      Also you may need symlinks to additional worktrees of repositories 
-      on other branches needed for builds.
-  
-EOD
-    fi
-
-  fi
+current_suite=$(cat $DEV1_USER_DATA/current_suite)
+if [[ "$1" == "$current_suite" ]]; then
+  task="$2"
+else
+  task="$1"
+fi
+source $DEV1_COMMANDS/set_current_context $current_suite $task
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "sending   $DEV1/commands/run $@"
   set +x
-  return
 fi
-set +x
-if [[ "$current_task" == "" ]]; then
-  if [[ -e $DEV1_USER_TASK_FILE ]]; then
-    export task=$(cat $DEV1_USER_TASK_FILE)
-    echo Suite ${current_suite} Available Tasks:
-    cd $DEV1_SUITES/${current_suite}/tasks/
-    ls -1 
-    cd - > /dev/null
-  fi
-elif [[ -d $DEV1_SUITES/${current_suite}/tasks/$current_task ]]; then
-  echo $DEV1_SUITES/${current_suite}/tasks/$current_task >$DEV1_USER_TASK_FILE
-  cd $DEV1_SUITES/${current_suite}/tasks/$current_task
-elif [[ matching_tasks == "0" ]]; then
-    echo  do you want to create a new task?
-    return 1
-elif [[ matching_tasks == "1" ]]; then
-  export task=$(basename $wildcard_task)
-  touch ${DEV1_USER_TASK_FILE}
-  echo $DEV1_SUITES/${current_suite}/tasks/$current_task >${DEV1_USER_TASK_FILE}
-  cd $DEV1_SUITES/${current_suite}/tasks/$current_task
-else 
-  echo Error in $DEV1_SUITES/${current_suite}/tasks
-fi
-

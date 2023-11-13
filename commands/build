@@ -9,14 +9,28 @@
 #   - Environment not set for DEV1
 #   - Project not found among the suites
 #   - Build script not found in the project
-source $DEV1/commands/suite $1 $2 
-for (( c=0; c<shift_params; c++ )); do 
-  shift 
-done
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/build $@"
+  set -x
+fi
+
+
+
+source $DEV1/commands/set_current_context $1 $2 
+set -x
+if [[ "$1" == "$current_suite" ]]; then
+  shift 1
+fi
+if [[ "$1" == "$current_task" ]]; then
+  shift 1
+fi
 echo "pwd: $PWD"
 if [[ -e build_parameters ]]; then
   build_parameters="$(cat build_parameters)"
+else
+  unset build_parameters
 fi
+echo build_parameters: $build_parameters
 dev_dir=$(pwd)/${current_suite}dev
 if [[ -e /build.sh ]]; then
   ./build.sh $@ $build_parameters
@@ -28,3 +42,7 @@ else
  echo "Did not find a build.sh file in $pwd"
 fi
 
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "ending  DEV1/commands/build $@"
+  set +x
+fi

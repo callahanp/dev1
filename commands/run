@@ -10,13 +10,15 @@
 #   - Project not found among the suites
 #   - run script not found in the project
 
-# set -x # uncomment to debug
-
-source $DEV1_COMMANDS/suite $1 $2
-if [[ "$shift_params" == "2" ]]; then
-  shift 2
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/run $@"
+  set -x
 fi
-if [[ "$shift_params" == "1" ]]; then
+source $DEV1_COMMANDS/set_current_context "$1" "$2" 
+if [[ "$1" == "$current_suite" ]]; then
+  shift 1
+fi
+if [[  "$2" == "$current_task" ]]; then
   shift 1
 fi
 if [[ -e run.sh ]]; then
@@ -24,6 +26,11 @@ if [[ -e run.sh ]]; then
 else 
   run_script=$(find -L ./ -maxdepth 2 -name run_script.sh)
   if [[ ! "run_script" == "" ]]; then
+    echo "$run_script $@"
     $run_script $@
   fi
+fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "ending   $DEV1/commands/run $@"
+  set +x
 fi

@@ -13,10 +13,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "starting $DEV1/commands/build $@"
   set -x
 fi
-
-
-
-source $DEV1/commands/set_current_context $1 $2 
+source $DEV1/commands/context $1 $2 
 set -x
 if [[ "$1" == "$current_suite" ]]; then
   shift 1

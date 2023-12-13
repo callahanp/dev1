@@ -5,7 +5,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   set -x
 fi
 
-source $DEV1_COMMANDS/set_current_context $1 $2
+source $DEV1_COMMANDS/context $1 $2
 
 if [[ ! "$2" == "" ]]; then
   source $DEV1/commands/task $current_suite $2

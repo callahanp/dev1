@@ -69,46 +69,6 @@ fi
 echo $current_suite >$DEV1_USER_DATA/current_suite
 echo $current_task >$DEV1_USER_DATA/${current_suite}_task
 
-# Make sure there is a repositories directory for the suite
-repositories_dir=$DEV1_SUITES/$current_suite/repositories
-mkdir -p $repositories_dir
-# If there are no repositories for the suite in it's repostories directory
-# create one by cloning from a personal github repository using the suite name
-# if the personal github repo does not exist this will fail and you will
-# have to create the repo manually, or clone it from github
-if [[ "$(ls -1 $DEV1_SUITES/$current_suite/repositories| wc -l)" == "0" ]]; then
-   cd $repositories_dir
-   git clone --bare git@github.com:$DEV1_GITHUB_USERNAME/${current_suite}.git ${current_suite}.git
-   cd - >/dev/null
-fi
-# Make sure there is a worktrees directory for the suite
-worktrees_dir=$DEV1_SUITES/$current_suite/worktrees
-mkdir -p $worktrees_dir
-# If there are no worktrees for the suite in the worktrees directory
-# create one from the next branch
-# This will fail if there is no next branch
-if [[ "$(ls -1 $worktrees| wc -l)" == "0"  ]]; then
-  cd $repositories/$current_suite.git
-  git worktree add $worktrees_dir/next next
-  cd - >/dev/null
-fi
-
-current_task_dir=$DEV1_SUITES/$current_suite/tasks/$current_task
-mkdir -p $DEV1_SUITES/$current_suite/tasks/$current_task
-
-# if a link to $worktrees_dir/next/$current_suite can be created, go ahead and create one
-
-if [[ ! -L  $current_task_dir/$current_suite && -e $worktrees_dir/next/$current_suite ]]; then
-  ln -s $worktrees_dir/next/$current_suite $current_task_dir/$current_suite
-
-fi
-if [[ -e  $DEV1_SUITES/$current_suite/tasks/$current_task  ]]; then
-  cd $DEV1_SUITES/$current_suite/tasks/$current_task
-else 
-  cd $DEV1_SUITES/$current_suite
-fi
-echo $current_suite >$DEV1_USER_DATA/current_suite
-echo $current_task >$DEV1_USER_DATA/${current_suite}_task
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "end   $DEV1_COMMANDS/set_current_context"
   set +x

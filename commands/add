@@ -1,0 +1,212 @@
+#!/bin/bash
+# dev1/commands/add
+# Alias a="$DEV1_COMMANDS/add"
+#
+# a suite <suite> <repo-url> <local-repo-name> <development-branch>
+# a suite <suite> <repo-url> <development-branch>
+# 
+# Creates a new suite from a git url, local-name for the repository and development branch.
+#
+# creates a new suite if not already present
+# clones a bare copy of the repo in $DEV1_SUITES/<suite>/<local-repo-name>
+# creates a worktree for the repo in $DEV1_SUITES/<suite>/worktrees/<development-branch>
+# creates task directory $DEV1_SUITES/<suite>/tasks/<development-branch> with symlink to $DEV1_SUITES/<suite>/worktrees/<development-branch>
+# creates $DEV1_SUITES/<suite>/tasks/<development-branch> <development-branch>.code-workspace
+#
+# a worktree <suite> <task-name> <local-repo-name>/<repo-url> <repo-branch>
+# 
+# adds a repository worktree to a task, specifying a specific branch for the task.
+
+# recall that task names are usually the same as the branch of at least one of the 
+# repositories needed for the task.  
+
+# Repository will be cloned bare if needed and the repo-url is given.
+# The task will be created if it does not exist
+# if just the local repo name is given, an existing previously cloned repo will be used.  
+# If the branch and/or worktree does not exist it will be created.
+
+# adding a suite, task or worktree that already exists will not cause a problem.
+# if any part of what is needed for a suite or task, it will be added, provided the 
+# parameters passed are valid.
+# parameters which conflict with what is already there are reported as errors.
+
+# paths:
+# 
+# ├── repositories
+# │   ├── repo1.git
+# │   ├── repo2.git
+# │   ├── repo3.git
+# ── tasks
+# │   ├── taskA
+# │   │   └── repoNameA
+# │   ├── TaskB
+# │   │   ├── build
+# │   │   ├── repo1 -> /work/suites/fg/worktrees/branch/repo1
+# │   │   ├── repo2 -> /work/suites/fg/worktrees/branch/repo2
+# 
+#
+# usage
+# add <suite-name> <git-url> <local-repository-name> <existing-branch>
+# 
+unset capabilities
+IFS=$'\n' capabilities=("Verify or Create the following items" 
+"   1. top_level:    Directories for \$suite, \$suite/repositories \$suite/tasks \$suite/worktrees"
+"   2. repo:         Bare git clone in \$suite/repositories/\$local_repo_name.git"
+"   3. readme:       Future - README.md in \$suite/repositories/\$local_repo_name.git"
+"   4. main_branch:  Future - next, main or master branch at HEAD in \$suite/repositories/\$local_repo_name.git"
+"   5. branch_worktree: Worktree for a main branch named next, main or master in \$suite/wortkrees/\$branch/\$local_repo_name" 
+"   6. branch_task_dir: \$suite/tasks/\$branch directory"
+"   7. branch_code_workspace: Create \$suite/tasks/\$branch/\$branch.code-workspace"
+"   8. branch_symlink: Create Create \$suite/tasks/\$branch/\$local_repo_name as link to  \$suite/wortkrees/\$branch/\$local_repo_name" 
+)
+function top_level() {
+  export suite_dir=$DEV1_SUITES/$suite
+  export suite_repositories_dir=$DEV1_SUITES/$suite/repositories
+  export suite_worktrees_dir=$DEV1_SUITES/$suite/worktrees
+  export suite_tasks_dir=$DEV1_SUITES/$suite/tasks
+  if [[ "$DEV1_DEBUG" != "" ]]; then
+    set +x
+    echo
+    echo "suite_dir:              $suite_dir"
+    echo "suite_repositories_dir: $suite_repositories_dir"
+    echo "suite_worktrees_dir:    $suite_worktrees_dir"
+    echo "suite_tasks_dir:        $suite_tasks_dir"
+    echo
+    set -x
+
+  fi
+  mkdir -p $suite_dir
+  mkdir -p $suite_repositories_dir
+  mkdir -p $suite_worktrees_dir
+  mkdir -p $suite_tasks_dir
+}
+function repo() {
+  cd $suite_repositories_dir
+  local_clone_dir=$local_repo_name.git
+  git ls-remote $repo_url >/dev/null 2>&1 
+  if [[ "$?" == "0" && ! -e $local_clone_dir ]]; then
+
+    git clone --bare $repo_url ${local_clone_dir}
+  fi
+  cd - >/dev/null
+  
+}
+function readme () {
+echo #stub
+}
+function main_branch() {
+echo #stub
+}
+function branch_worktree() {
+  local_clone_dir=$DEV1_SUITES/$suite/repositories/$local_repo_name.git
+  worktree_parent_dir=$suite_worktrees_dir/$development_branch_name
+  worktree_dir=$worktree_parent_dir/$local_repo_name
+  mkdir -p $worktree_parent_dir
+  if [[ ! -e $worktree_dir ]]; then 
+    echo
+    cd $local_clone_dir
+    git worktree add $worktree_dir $development_branch_name
+    echo
+  fi
+}
+function branch_task_dir() {
+task_dir=$suite_tasks_dir/$development_branch_name
+  mkdir -p $task_dir
+}
+function branch_code_workspace() {
+  vscode_workspace_file=$task_dir/${development_branch_name}.code-workspace
+  if [[ ! -e $vscode_workspace_file ]]; then 
+    cp $DEV1/templates/template.code-workspace $vscode_workspace_file
+  fi
+}
+function branch_symlink() {
+
+if [[ ! -L $task_dir/${local_repo_name} ]]; then 
+    ln -s $worktree_parent_dir/${local_repo_name} $task_dir/${local_repo_name}
+  fi
+echo 
+}
+function show_capabilities(){
+  set +x
+  echo
+  for item in ${capabilities[@]}; do
+    echo $item
+  done
+  echo
+  if [[ "$DEV1_DEBUG" != "" ]]; then
+    set -x
+  fi
+}
+function do_capabilities(){
+    unset stop
+    for item in ${capabilities[@]}; do
+      s1="s/\$suite/$suite/g"
+      s2="s/\$local_repo_name/$local_repo_name/g"
+      s3="s/\$branch/$branch/g"
+      echo $item|sed -e $s1 |sed -e $s2 |sed -e $s3
+      function_name=$(echo $item |sed -e 's/[ \t]*[0-9]*[.][ \t]//' |sed -e 's/:.*//')
+      
+      if [[ "${function_name}" != "${capabilities[0]}"  ]]; then
+        $function_name
+      fi
+      if [[ "$stop" != "" ]]; then
+        break;
+      fi
+    done
+}
+
+
+# --------------------------------------------------
+ask()
+{
+  declare -g $1="$2"
+  if [ -z "${!1}" ]; then
+    echo "$3"
+    read $1
+  fi
+}
+# --------------------------------------------------
+if [[ "$DEV1_DEBUG" != "" ]]; then
+  echo "STARTING $BASH_SOURCE $@"
+  set -x
+fi
+
+# <suite> <repo-url> <local-repo-name> <development-branch>
+if [[ "$1" == "" ]]; then
+  ask suite "$1" "Name of the Suite:"
+  ask repo_url   "$2" "Repository URL or local"
+  ask local_repo_name   "$3" "Local name of repository"
+  ask development_branch_name  "$4" "Name of branch in local repository"
+else
+
+ # input parameter handling
+    suite="$1"
+    repo_url="$2"
+    if [[ "$4" == "" && ! -e $DEV1_SUITES/$suite ]]; then
+      local_repo_name=$3
+      development_branch_name=""
+    else
+      local_repo_name="$3"
+      development_branch_name="$4"
+    fi
+  fi
+  if [[ "$DEV1_DEBUG" != "" ]]; then
+   set +x
+    echo "Inputs: "
+    echo "suite:                   $suite"
+    echo "repo_url:                $repo_url"
+    echo "local_repo_name:         $local_repo_name"
+    echo "development_branch_name: $development_branch_name"
+    set -x
+  fi
+echo $0 $suite $repo_url $local_repo_name $development_branch_name
+cd $DEV1_SUITES
+
+show_capabilities
+do_capabilities
+set +x
+source $DEV1_COMMANDS/show
+source $DEV1_COMMANDS/suite $suite $development_branch_name
+if [[ "$DEV1_DEBUG" != "" ]]; then
+  echo "ENDING   $BASH_SOURCE $@"
+fi

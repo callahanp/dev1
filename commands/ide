@@ -13,7 +13,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "starting $DEV1/commands/ide $@"
   set -x
 fi
-source $DEV1_COMMANDS/set_current_context "$1" "$2" "$3"
+source $DEV1_COMMANDS/context "$1" "$2" "$3"
 echo $current_task
 if [[ "$current_task" == "" \
    && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then

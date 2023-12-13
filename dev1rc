@@ -29,6 +29,7 @@ export DEV1_USER_DATA=~/.dev1
 mkdir -p $DEV1_USER_DATA
 cd $DEV1
 alias suites="cd $(pwd)/..; ls ./"
+alias context="f(){ source $(pwd)/commands/context \$@; unset -f f; }; f"
 alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"
 alias build="f(){ source $(pwd)/commands/build \$@; unset -f f; }; f"
 alias run="f(){ source $(pwd)/commands/run \$@;unset -f f; }; f"
@@ -37,7 +38,7 @@ alias suite="f(){ source $(pwd)/commands/suite \$@; unset -f f; }; f"
 alias task="f(){ source $(pwd)/commands/task \$@; unset -f f; }; f"
 alias workspace="f(){ source $(pwd)/commands/workspace \$@; unset -f f; }; f"
 alias status="f(){ source $(pwd)/commands/status \$@; unset -f f; }; f"
-alias app="f(){ source $(pwd)/commands/app \$@; unset -f f; }; f"
+alias add="f(){ source $(pwd)/commands/add \$@; unset -f f; }; f"
 alias bootstrap="f(){ source $(pwd)/commands/bootstrap \$@; unset -f f; }; f"
 alias dev1rc="source $(pwd)/dev1rc"
 
@@ -45,6 +46,7 @@ function copy_alias(){
 alias $2="$(alias $1 |sed -e s/.*=// -e s/\'//g )"
 
 }
+copy_alias context c
 copy_alias task t
 copy_alias suite s
 copy_alias workspace w
@@ -52,7 +54,7 @@ copy_alias ide i
 copy_alias build b
 copy_alias run r
 copy_alias debug g
-copy_alias app m
+copy_alias add a
 
 
 alias suites="cd $DEV1_SUITES; ls -1"

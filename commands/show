@@ -1,0 +1,17 @@
+#!/bin/bash
+# Show suite file and directory structure
+
+$DEV1_COMMANDS/suite "$1"
+for dir in $DEV1_SUITES/${suite}}*; do
+  echo 
+  echo "$suite directory & symlink structure:"
+  echo
+  tree -L 3 -d $suite_dir
+  for d in $suite_dir/tasks/*; do
+  echo 
+
+    echo $d:
+    ls -lah $d|grep -v -e "^total" -e "[.]$"
+    echo
+  done
+done

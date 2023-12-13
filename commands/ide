@@ -14,7 +14,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   set -x
 fi
 source $DEV1_COMMANDS/context "$1" "$2" "$3"
-echo $current_task
+if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
 if [[ "$current_task" == "" \
    && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
    cd $DEV1_SUITES/$current_suite/repositories/$current_suite

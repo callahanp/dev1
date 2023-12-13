@@ -1,8 +1,16 @@
 #!/bin/bash
-set -x
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/run $@"
+  set -x
+fi
+unalias debug
+function debug(){
+   echo "$@ current_suite: $current_suite current_task: $current_task current_product: $current_product" 
+}
 current_suite="$1"
 current_task="$2"
 current_product="$3"
+if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 1; fi
 if [[ "$current_product" == "" && "$current_task" == "$DEV1_CURRENT_TASK" && "$current_suite"="$DEV1_CURRENT_SUITE" ]]; then
   current_product=$DEV1_CURRENT_PROJECT
 fi
@@ -13,6 +21,7 @@ if [[ "$current_suite" == "" ]]; then
   current_suite=$DEV1_CURRENT_SUITE
 fi
 # parse pwd to determine if suite, task and project are defined by the current directory
+if [[ "$DEV1_DEBUG" == "" ]]; then debug 2; fi
 PWD=$(pwd)
 suitepath=${PWD##${DEV1_SUITES}/}
 if [[ ! "${suitepath}" == "$PWD" ]]; then
@@ -27,6 +36,7 @@ if [[ ! "${suitepath}" == "$PWD" ]]; then
 		fi
 	fi
 fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 3; fi
 if [[ "$current_suite" == "" || ! $current_suite == pwd_suite && ! $PWD_suite == "" ]]; then
   current_suite="$pwd_suite"
   current_task="$pwd_task"
@@ -45,6 +55,45 @@ fi
 if [[ "$current_task" == "" ]]; then
   current_product=$(cat "$DEV1_USER_DATA/${current_suite}_${current_task}_product")
 fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 4; fi
+
+# validate and use wildcards
+function validate_suite(){
+  if [[ -d $DEV1_SUITES/$current_suite ]] then 
+    echo $current_suite
+    return 0
+  fi
+  possible_suites="$DEV1_SUITES/*${current_suite}*"
+  compgen -G "$DEV1_SUITES/*${current_suite}*"
+  if [[ $? == 1 ]]; then
+    echo ""
+    return 1
+  fi
+  if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 5 "possible_suites: ${possible_suites}"; fi
+
+  i=1
+  pad=" "
+  for suite in ${possible_suites[@]}; do
+    echo "$pad $i  $suite"
+    if [[ "$i" -gt "10" ]]; then
+      pad=""
+    fi
+  done
+  while [[ "$selected" == "" ]]; do
+    read selected
+    if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_suites[@]}" ]]; then
+      echo $(basename ${possible_suites[$selected]})
+      return
+    fi
+    echo "Enter a number between 1 and ${#possible_suites[@]}"
+  done
+}
+current_suite=$(validate_suite)
+if [[ "$current_suite" == "" ]]; then
+  echo "error"
+  return 1
+fi
+#current_task=$(validate_task)
 
 export DEV1_SUITE=$current_suite
 export DEV1_TASK=$current_task

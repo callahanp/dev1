@@ -124,13 +124,12 @@ if [[ ! -d $DEV1_SUITES/$current_suite/tasks/$current_task ]] then
   fi
   unset possible_tasks
   possible_tasks=$(compgen -G "$DEV1_SUITES/${current_suite}/tasks/*$current_task*")
-  echo  --------> possible_tasks: $possible_tasks
+
 
   #---------------------------------------------------------------------------------------------
   if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 6 possible tasks: $possible_tasks; fi
  #---------------------------------------------------------------------------------------------
   if [[ "${#possible_tasks[@]}" == "1" ]]; then
-    echo "-${possible_tasks[0]}-"
     current_task="$(basename ${possible_tasks[0]})"
   else
     i=1
@@ -149,7 +148,6 @@ if [[ ! -d $DEV1_SUITES/$current_suite/tasks/$current_task ]] then
       fi
       echo "Enter a number between 1 and ${#possible_tasks[@]}"
     done
-
   fi
 fi
 
@@ -169,7 +167,7 @@ echo $DEV1_PROJECT >"$DEV1_USER_DATA/${current_suite}_${current_task}_product"
 
 cd $DEV1_SUITES/$current_suite/tasks/$current_task
 
-return
+return 0
 # A DEV1 command will set the process context variables for suite, task, and product in that order.  For each of them, the source of the values can be 
 # a parameter
 # a process environment variable

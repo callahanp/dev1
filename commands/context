@@ -1,16 +1,21 @@
 #!/bin/bash
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/run $@"
+  echo "starting $DEV1/commands/context $@"
   set -x
 fi
-unalias debug
-function debug(){
-   echo "$@ current_suite: $current_suite current_task: $current_task current_product: $current_product" 
+function context_debug(){
+   echo "Debug ${BASH_SOURCE[0]} $@ current_suite: $current_suite current_task: $current_task current_product: $current_product" 
 }
+# validate and use wildcards
+unset current_suite
+unset current_task
+unset current_product
 current_suite="$1"
 current_task="$2"
 current_product="$3"
-if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 1; fi
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 1; fi
+#--------------------------------------------------------
 if [[ "$current_product" == "" && "$current_task" == "$DEV1_CURRENT_TASK" && "$current_suite"="$DEV1_CURRENT_SUITE" ]]; then
   current_product=$DEV1_CURRENT_PROJECT
 fi
@@ -20,8 +25,10 @@ fi
 if [[ "$current_suite" == "" ]]; then
   current_suite=$DEV1_CURRENT_SUITE
 fi
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 2; fi
+#--------------------------------------------------------
 # parse pwd to determine if suite, task and project are defined by the current directory
-if [[ "$DEV1_DEBUG" == "" ]]; then debug 2; fi
 PWD=$(pwd)
 suitepath=${PWD##${DEV1_SUITES}/}
 if [[ ! "${suitepath}" == "$PWD" ]]; then
@@ -36,7 +43,9 @@ if [[ ! "${suitepath}" == "$PWD" ]]; then
 		fi
 	fi
 fi
-if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 3; fi
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 3; fi
+#--------------------------------------------------------
 if [[ "$current_suite" == "" || ! $current_suite == pwd_suite && ! $PWD_suite == "" ]]; then
   current_suite="$pwd_suite"
   current_task="$pwd_task"
@@ -55,49 +64,104 @@ fi
 if [[ "$current_task" == "" ]]; then
   current_product=$(cat "$DEV1_USER_DATA/${current_suite}_${current_task}_product")
 fi
-if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 4; fi
-
-# validate and use wildcards
-function validate_suite(){
-  if [[ -d $DEV1_SUITES/$current_suite ]] then 
-    echo $current_suite
-    return 0
-  fi
-  possible_suites="$DEV1_SUITES/*${current_suite}*"
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4a; fi
+#--------------------------------------------------------
+echo "------------------------------"
+echo 'validate suite'
+echo "------------------------------"
+if [[ ! -d $DEV1_SUITES/$current_suite ]] then 
   compgen -G "$DEV1_SUITES/*${current_suite}*"
-  if [[ $? == 1 ]]; then
-    echo ""
-    return 1
+  if [[ "$?" == "1" ]]; then
+    current_suite=""
+  else
+    possible_suites=($DEV1_SUITES/*${current_suite}*)
   fi
-  if [[ ! "$DEV1_DEBUG" == "" ]]; then debug 5 "possible_suites: ${possible_suites}"; fi
+  #---------------------------------------------------------------------------------------------
+  if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 5 "possible_suites: ${possible_suites}"; fi
+  #---------------------------------------------------------------------------------------------
 
-  i=1
-  pad=" "
-  for suite in ${possible_suites[@]}; do
-    echo "$pad $i  $suite"
-    if [[ "$i" -gt "10" ]]; then
-      pad=""
-    fi
-  done
-  while [[ "$selected" == "" ]]; do
-    read selected
-    if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_suites[@]}" ]]; then
-      echo $(basename ${possible_suites[$selected]})
-      return
-    fi
-    echo "Enter a number between 1 and ${#possible_suites[@]}"
-  done
-}
-current_suite=$(validate_suite)
+    if [[ "${#possible_suites[@]}" == "1" ]]; then
+      current_suite="$(basename ${possible_suites[0]})"
+    else
+      i=1
+      pad=" "
+      for suite in ${possible_suites[@]}; do
+        echo "$pad $i  $suite"
+        if [[ "$i" -gt "10" ]]; then
+          pad=""
+        fi
+      done
+      while [[ "$selected" == "" ]]; do
+        read selected
+        if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_suites[@]}" ]]; then
+          suite=$(basename ${possible_suites[$selected]})
+          return
+        fi
+        echo "Enter a number between 1 and ${#possible_suites[@]}"
+      done
+  fi 
+fi
+
 if [[ "$current_suite" == "" ]]; then
-  echo "error"
   return 1
 fi
-#current_task=$(validate_task)
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4b; fi
+#--------------------------------------------------------
 
-export DEV1_SUITE=$current_suite
-export DEV1_TASK=$current_task
-export DEV1_PRODUCT=$current_product
+
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "------------------------------"
+  echo 'validate task'
+  echo "------------------------------"
+fi
+if [[ ! -d $DEV1_SUITES/$current_suite/tasks/$current_task ]] then 
+
+  compgen -G "$DEV1_SUITES/${current_suite}/tasks/*$current_task*"
+  if [[ $? == 1 ]]; then
+    current_task=""; return 1
+  fi
+  unset possible_tasks
+  possible_tasks=$(compgen -G "$DEV1_SUITES/${current_suite}/tasks/*$current_task*")
+  echo  --------> possible_tasks: $possible_tasks
+
+  #---------------------------------------------------------------------------------------------
+  if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 6 possible tasks: $possible_tasks; fi
+ #---------------------------------------------------------------------------------------------
+  if [[ "${#possible_tasks[@]}" == "1" ]]; then
+    echo "-${possible_tasks[0]}-"
+    current_task="$(basename ${possible_tasks[0]})"
+  else
+    i=1
+    pad=" "
+    for task in ${possible_tasks[@]}; do
+      echo "$pad $i  suite: $current_suite task: $task"
+      if [[ "$i" -gt "10" ]]; then
+        pad=""
+      fi
+    done
+    while [[ "$selected" == "" ]]; do
+      read selected
+      if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_tasks[@]}" ]]; then
+        current_task=$(basename ${possible_tasks[$selected]})
+        return
+      fi
+      echo "Enter a number between 1 and ${#possible_tasks[@]}"
+    done
+
+  fi
+fi
+
+if [[ "$current_task" == "" ]]; then
+  return 1
+fi
+#--------------------------------------------------------
+if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4c; fi
+#--------------------------------------------------------
+export DEV1_SUITE="$current_suite"
+export DEV1_TASK="$current_task"
+export DEV1_PRODUCT="$current_product"
 
 echo $DEV1_SUITE   >"$DEV1_USER_DATA/current_suite"
 echo $DEV1_TASK    >"$DEV1_USER_DATA/${current_suite}_task"

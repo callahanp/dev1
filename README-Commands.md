@@ -1,5 +1,35 @@
 # DEV1 Commands 
 
+DEV1 commands take two sets of parameters separated by --:
+
+- context
+- command-related
+
+Context parameters include suite-name task-name & product-name
+Command-related parameters are passed to scripts that perform one of the folling actions:
+
+- c or context <suite-name> <task-name> <product-name>
+- add-repo <suite-name> -- <repo-url> <local-repo-name> <initial-branch>
+- add-worktree <suite-name> -- <local-repo-name> <branch-tag-or-commit> 
+- add-task   [[<suite-name>] <task-name>] -- <local-repo-name> <branch-tag-or-commit> <build-type> [<task-name>]
+- i or ide   [ <suite-name> <task-name> ]
+- b or build [ <suite-name> <task-name> ] -- [<build-sepecific-parameters>]
+- r or run   [ <suite-name> <task-name> ] -- [<run-sepecific-parameters>]
+
+build and run commands include a facility to add configurable parameters.  Users can create a standard set of parmeters for the suite, and for each task.
+
+Future:
+Parameter Configurations are found in
+
+-$DEV1_TASK_DIR/build_param*.txt
+-$DEV1_SUITE_DIR/build_param*.txt
+
+-$DEV1_TASK_DIR/run_param*.txt
+-$DEV1_SUITE_DIR/run_param*.txt
+
+parameters obtained from the task location override similar parameters from the suite directory.
+
+
 ## Find and Execute 
 
 The several of the native commands in dev0 are basically forwarders that find the appropriate script to run and pass along parameters to it.

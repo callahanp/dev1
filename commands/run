@@ -15,9 +15,23 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   set -x
 fi
 source $DEV1_COMMANDS/context "$1" "$2" 
+
 if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
+
+if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
+  while [[ ! "$1" == "--" ]]; do
+    shift  # shift options before the --
+  done
+  shift    # shift the --
+fi
+
+echo "$(basename ${BASH_SOURCE[0]}) $@"
+echo "cd $(pwd)"
+
 while [[ ! "$1" == "--" && ! "$1" == "" ]]; do shift; done
+
 if [[ -e run.sh ]]; then
+  echo "./run.sh"
   ./run.sh  $@
 else 
   run_script=$(find -L ./ -maxdepth 2 -name run_script.sh)

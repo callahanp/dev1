@@ -1,17 +1,14 @@
 #!/bin/bash
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/task $@"
+  echo "start /work/suites/dev1/worktrees/next/dev1/commands/suite"
   set -x
 fi
-#set -x #uncomment for debugging
-current_suite=$(cat $DEV1_USER_DATA/current_suite)
-if [[ "$1" == "$current_suite" ]]; then
-  task="$2"
-else
-  task="$1"
-fi
-source $DEV1_COMMANDS/set_current_context $current_suite $task
+
+source $DEV1_COMMANDS/context
+source $DEV1_COMMANDS/context $DEV1_SUITE $1
+
+cd $DEV1_SUITES/$current_suite/tasks/$current_task
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "sending   $DEV1/commands/run $@"
+  echo "ending   $DEV1/commands/run $@"
   set +x
 fi

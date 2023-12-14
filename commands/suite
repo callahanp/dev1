@@ -7,10 +7,6 @@ fi
 
 source $DEV1_COMMANDS/context $1 $2
 
-if [[ ! "$2" == "" ]]; then
-  source $DEV1/commands/task $current_suite $2
-  echo $current_task >$DEV1_USER_DATA/$current_suite
-fi
 cd $DEV1_SUITES/$current_suite/tasks/$current_task
 
 if [[ ! "$DEV1_DEBUG" == "" ]]; then

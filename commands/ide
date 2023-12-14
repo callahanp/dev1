@@ -15,11 +15,18 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
 fi
 source $DEV1_COMMANDS/context "$1" "$2" "$3"
 if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
+if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
+  while [[ ! "$1" == "--" ]]; do
+    shift  # shift options before the --
+  done
+  shift    # shift the --
+fi
 if [[ "$current_task" == "" \
    && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
    cd $DEV1_SUITES/$current_suite/repositories/$current_suite
 fi
-pwd
+echo "$(basename ${BASH_SOURCE[0]}) $@"
+echo "cd $(pwd)"
 if [[ -e $current_task.code-workspace ]]; then
   echo "code $current_task.code-workspace"
   code $current_task.code-workspace

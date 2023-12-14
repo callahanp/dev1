@@ -10,9 +10,15 @@ function context_debug(){
 unset current_suite
 unset current_task
 unset current_product
-current_suite="$1"
-current_task="$2"
-current_product="$3"
+if [[ ! "$1" == "--" ]]; then
+  current_suite="$1"
+fi
+if [[ ! "$2" == "--" ]]; then
+  current_task="$2"
+fi
+if [[ ! "$3" == "--" ]]; then
+  current_product="$3"
+fi
 #--------------------------------------------------------
 if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 1; fi
 #--------------------------------------------------------
@@ -65,17 +71,20 @@ if [[ "$current_task" == "" ]]; then
   current_product=$(cat "$DEV1_USER_DATA/${current_suite}_${current_task}_product")
 fi
 #--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4a; fi
+if [[ ! "$DEV1_DEBUG" == "" ]]; then 
 #--------------------------------------------------------
-echo "------------------------------"
-echo 'validate suite'
-echo "------------------------------"
+  echo "------------------------------"
+  echo 'validate suite'
+  echo "------------------------------"
+  context_debug 4a;
+fi
 if [[ ! -d $DEV1_SUITES/$current_suite ]] then 
-  compgen -G "$DEV1_SUITES/*${current_suite}*"
+  compgen -G "$DEV1_SUITES/*${current_suite}*" >/dev/null
   if [[ "$?" == "1" ]]; then
-    current_suite=""
+    current_suite=""$(compgen -G "$DEV1_SUITES/*${current_suite}*" >/dev/null
+  )
   else
-    possible_suites=($DEV1_SUITES/*${current_suite}*)
+    possible_suites=$
   fi
   #---------------------------------------------------------------------------------------------
   if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 5 "possible_suites: ${possible_suites}"; fi
@@ -118,7 +127,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
 fi
 if [[ ! -d $DEV1_SUITES/$current_suite/tasks/$current_task ]] then 
 
-  compgen -G "$DEV1_SUITES/${current_suite}/tasks/*$current_task*"
+  compgen -G "$DEV1_SUITES/${current_suite}/tasks/*$current_task*" >/dev/null
   if [[ $? == 1 ]]; then
     current_task=""; return 1
   fi
@@ -161,9 +170,9 @@ export DEV1_SUITE="$current_suite"
 export DEV1_TASK="$current_task"
 export DEV1_PRODUCT="$current_product"
 
-echo $DEV1_SUITE   >"$DEV1_USER_DATA/current_suite"
-echo $DEV1_TASK    >"$DEV1_USER_DATA/${current_suite}_task"
-echo $DEV1_PROJECT >"$DEV1_USER_DATA/${current_suite}_${current_task}_product"
+echo $DEV1_SUITE   > "$DEV1_USER_DATA/current_suite"
+echo $DEV1_TASK    > "$DEV1_USER_DATA/${current_suite}_task"
+echo $DEV1_PROJECT > "$DEV1_USER_DATA/${current_suite}_${current_task}_product"
 
 cd $DEV1_SUITES/$current_suite/tasks/$current_task
 

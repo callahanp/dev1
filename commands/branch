@@ -1,0 +1,35 @@
+DEV1_DEBUG=1
+if [[ ! "$DEV1_DEBUG" == "" ]]; then
+  echo "starting $DEV1/commands/branch $@"
+  set -x
+fi
+
+DEV1_REPOSITORIES=$DEV1_SUITES/$current_suite/repositories
+# set context to suite
+# # 
+# count repositories in $DEV1_REPOSITORIES
+# if just one,
+#   selected_repository=$(basename *.git)
+# fi
+# if more than one 
+#   ask.
+#
+# cd $DEV1_REPOSITORIES/selected_repository
+# git rev-parse --verify $branch 2>/dev/null
+# if branch exists check worktrees
+# if worktree exists 
+#   error
+# fi
+# if no branch create branch and worktree
+#   git worktree add -b $branch  $worktree_path 
+# fi
+# if branch exists create worktree for existing branch
+#   git worktree add $worktree_path
+# fi
+# set context to suite and branch
+#$DEV_COMMANDS/context $current_suite $branch
+# ensure directory $DEV1_SUITES/$current_suite/tasks/$branch
+# link to worktree 
+ln -s $worktree_path/$selected_repository
+
+echo branch command stub

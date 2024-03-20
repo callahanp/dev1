@@ -10,7 +10,8 @@
 # creates a new suite if not already present
 # clones a bare copy of the repo in $DEV1_SUITES/<suite>/<local-repo-name>
 # creates a worktree for the repo in $DEV1_SUITES/<suite>/worktrees/<development-branch>
-# creates task directory $DEV1_SUITES/<suite>/tasks/<development-branch> with symlink to $DEV1_SUITES/<suite>/worktrees/<development-branch>
+# creates task directory $DEV1_SUITES/<suite>/tasks/<development-branch> with symlink 
+# to $DEV1_SUITES/<suite>/worktrees/version/<development-branch>
 # creates $DEV1_SUITES/<suite>/tasks/<development-branch> <development-branch>.code-workspace
 #
 # a worktree <suite> <task-name> <local-repo-name>/<repo-url> <repo-branch>

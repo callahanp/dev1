@@ -13,28 +13,26 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "starting $DEV1/commands/build $@"
   set -x
 fi
-source $DEV1/commands/context $1 $2 
-if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
-if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
-  while [[ ! "$1" == "--" ]]; do
-    shift  # shift options before the --
-  done
-  shift    # shift the --
+parameters="$@"
+context_parameters=${parameters%--*}
+source $DEV1/commands/context $context_parameters
+parameters="${parameters/${context}--/}"
+build_options=${parameters%--*}
+build_targets=${parameters#*--}
+if [[ "$build_options" == "$build_targets" ]]; then 
+  unset build_targets
 fi
 echo "cd $PWD"
-if [[ -e build_parameters ]]; then
-  build_parameters="$(cat build_parameters)"
-else
-  unset build_parameters
-fi
-echo build_parameters: $build_parameters
 dev_dir=$(pwd)/${current_suite}dev
 if [[ -e /build.sh ]]; then
-  ./build.sh $@ $build_parameters
-elif [[ -e $dev_dir/build.sh ]]; then
-  cmd="$dev_dir/build.sh $@ $build_parameters"
-  echo $cmd
-  $cmd
+  build_script="./build.sh "
+elif [[ -e ${dev_dir}/build.sh ]]; then
+  build_script=$dev_dir/build.sh
+fi
+if [[ "$build_script" != "" ]]; then
+cmd="$dev_dir/build.sh  $build_options -- $build_targets"
+echo $cmd
+$cmd
 else
  echo "Did not find a build.sh file in $pwd"
 fi

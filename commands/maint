@@ -10,24 +10,24 @@
 # creates a new suite if not already present
 # clones a bare copy of the repo in ${DEV1_SUITES}/<suite>/<local-repo-name>
 # creates a worktree for the repo in ${DEV1_SUITES}/<suite>/worktrees/<development-branch>
-# creates task directory ${DEV1_SUITES}/<suite>/tasks/<development-branch> with symlink 
+# creates task directory ${DEV1_SUITES}/<suite>/tasks/<development-branch> with symlink
 # to ${DEV1_SUITES}/<suite>/worktrees/version/<development-branch>
 # creates ${DEV1_SUITES}/<suite>/tasks/<development-branch> <development-branch>.code-workspace
 #
 # a worktree <suite> <task-name> <local-repo-name>/<repo-url> <repo-branch>
-# 
+#
 # adds a repository worktree to a task, specifying a specific branch for the task.
 
-# recall that task names are usually the same as the branch of at least one of the 
-# repositories needed for the task.  
+# recall that task names are usually the same as the branch of at least one of the
+# repositories needed for the task.
 
 # Repository will be cloned bare if needed and the repo-url is given.
 # The task will be created if it does not exist
-# if just the local repo name is given, an existing previously cloned repo will be used.  
+# if just the local repo name is given, an existing previously cloned repo will be used.
 # If the branch and/or worktree does not exist it will be created.
 
 # adding a suite, task or worktree that already exists will not cause a problem.
-# if any part of what is needed for a suite or task, it will be added, provided the 
+# if any part of what is needed for a suite or task, it will be added, provided the
 # parameters passed are valid.
 # parameters which conflict with what is already there are reported as errors.
 
@@ -51,7 +51,7 @@
 function repo() {
   cd $suite_repositories_dir
   local_clone_dir=$suite.git
-  git ls-remote $repo_url >/dev/null 2>&1 
+  git ls-remote $repo_url >/dev/null 2>&1
   if [[ "$?" == "0" && ! -e $local_clone_dir ]]; then
     git clone --bare $repo_url ${local_clone_dir}
   fi
@@ -72,7 +72,7 @@ function branch_worktree() {
   worktree_parent_dir=$suite_worktrees_dir/$branch_name
   worktree_dir=$worktree_parent_dir/$suite
   mkdir -p $worktree_parent_dir
-  if [[ ! -e ${worktree_dir} ]]; then 
+  if [[ ! -e ${worktree_dir} ]]; then
     echo
     cd $local_clone_dir
     git worktree add ${worktree_dir} $branch_name
@@ -128,7 +128,7 @@ function askSuite()
       if [[ "$suite_name" == "" ]]; then
         suite_name=$suite_dir
       fi
-  else 
+  else
     suite_name=$1
   fi
 }
@@ -158,7 +158,7 @@ function addSuite()
   }
 # --------------------------------------------------
 function addClone()
-{ 
+{
   echo addClone - not implemented
   cd $suite_repositories_dir
   declare -g git_url=$1
@@ -168,15 +168,15 @@ function addClone()
   # local_repo_name might have been a branch
   # branch becomes what local_repo_name was and the remote repo name is substituted.
   # if no branch was given, select one of next, main or master depending on which is present
-  # and make a worktree with  the passed branch name in $3, or 
+  # and make a worktree with  the passed branch name in $3, or
 }
 function addLocalGit()
-{ 
+{
   echo addLocalGit - not implemented
 }
 # --------------------------------------------------
 function addOriginURL()
-{ 
+{
   echo addOriginURL - not implemented
 }
 # --------------------------------------------------
@@ -261,7 +261,7 @@ if [[ "$1" == "$what_to_add" ]] ; then
     shift 1
 fi
 askSuite $1
-if [[ "$suite_name" != "" ]]; then 
+if [[ "$suite_name" != "" ]]; then
   addSuite $suite_name
   if [[ "$1" == $suite_name && ${#suite_name} != 0 ]] ; then
       shift 1
@@ -271,7 +271,7 @@ if [[ "$suite_name" != "" ]]; then
       if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit else return 2> /dev/null; fi
   fi
 fi
-case "$what_to_add" in 
+case "$what_to_add" in
 c|clone)
     addClone $@;;
 l|local|local-git)
@@ -308,7 +308,7 @@ if [[ "$what_to_add" == "wget" ]]; then
   cd $suite_repositories_dir
   local_repo
   setup_branch
-  if [[ ! -e $(basename $repo_url) ]]; then 
+  if [[ ! -e $(basename $repo_url) ]]; then
     wget $repo_url
   fi
   cd $suite_tasks_dir/$branch_name/$suite

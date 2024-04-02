@@ -7,7 +7,7 @@ fi
 source $DEV1_COMMANDS/context
 source $DEV1_COMMANDS/context $DEV1_SUITE $1
 
-cd $DEV1_SUITES/$current_suite/tasks/$current_task
+cd $DEV1_SUITES/${currentSuite}/tasks/${currentTask}
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "ending   $DEV1/commands/run $@"
   set +x

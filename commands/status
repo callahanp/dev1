@@ -25,7 +25,7 @@ fi
 Application
 source $DEV1_COMMANDS/task $1 $2 $3
 if [[ $? ]]; then
-  echo "$tab Current Suite:      $current_suite"
+  echo "$tab Current Suite:      ${currentSuite}"
   echo "$tab Current Activity:   $current_activity"
   echo "$tab Current Repository: $current_repository"
 fi
@@ -58,7 +58,7 @@ echo "protobuf"
 
 has ".*[.]pb[.]cc$" .pb.cc
 has ".*[.]pb[.]h$" .pb.h
-echo "Nasal:":"
+echo "Nasal:"
 has ".*[.]nas$" ".nas"
 echo "Python"
 has ".*[.]py$" python

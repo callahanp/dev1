@@ -5,10 +5,10 @@ DEV1 commands take two sets of parameters separated by --:
 - context
 - command-related
 
-Context parameters include suite-name task-name & product-name
+Context parameters include suite-name task-name & CodeWorkspace-name
 Command-related parameters are passed to scripts that perform one of the folling actions:
 
-- c or context <suite-name> <task-name> <product-name>
+- c or context <suite-name> <task-name> <CodeWorkspace-name>
 - add-repo <suite-name> -- <repo-url> <local-repo-name> <initial-branch>
 - add-worktree <suite-name> -- <local-repo-name> <branch-tag-or-commit> 
 - add-task   [[<suite-name>] <task-name>] -- <local-repo-name> <branch-tag-or-commit> <build-type> [<task-name>]

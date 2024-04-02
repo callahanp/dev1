@@ -4,7 +4,7 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   set -x
 fi
 
-DEV1_REPOSITORIES=$DEV1_SUITES/$current_suite/repositories
+DEV1_REPOSITORIES=$DEV1_SUITES/${currentSuite}/repositories
 # set context to suite
 # # 
 # count repositories in $DEV1_REPOSITORIES
@@ -27,8 +27,8 @@ DEV1_REPOSITORIES=$DEV1_SUITES/$current_suite/repositories
 #   git worktree add $worktree_path
 # fi
 # set context to suite and branch
-#$DEV_COMMANDS/context $current_suite $branch
-# ensure directory $DEV1_SUITES/$current_suite/tasks/$branch
+#$DEV_COMMANDS/context ${currentSuite} $branch
+# ensure directory $DEV1_SUITES/${currentSuite}/tasks/$branch
 # link to worktree 
 ln -s $worktree_path/$selected_repository
 

@@ -15,16 +15,19 @@
 #   m <suiteName>
 # or as a command
 #   $DEV1_COMMANDS/maint <suiteName>
+# ToDo - Path variables for all Suite Directories. Use $DEV1_SUITES only once. Fix all cd commands to use path variables
+# ToDo - Detect if all actions are already done, Log that they are and skip to operation Don't overwrite git with the same data.
+# ToDo - Logging Cleanup
 # --------------------------------------------------
 function ShowVariables()
-{
+{  if [ trace ]; then echo "function ShowVariables()"; fi
   while [[ "$1" != "" ]] ; do
     echo "$1:     ${!1}"
     shift
   done
 }
 function ShowJson()
-{
+{ if [ trace ]; then echo "function ShowJson()"; fi
   while [[ "$1" != "" ]] ; do
     echo "$1:     $(echo ${!1}|jq '.')"
     shift
@@ -32,7 +35,7 @@ function ShowJson()
 }
 # --------------------------------------------------
 function askSuite()
-{
+{ if [ trace ]; then echo "function askSuite()"; fi
   if [[ "$1" == "" ]]; then
     if [[ $(pwd|grep -P "${DEV1_SUITES}") ]]; then
       suite_dir=$(pwd)
@@ -48,19 +51,22 @@ function askSuite()
   else
     suiteName=$1
   fi
+  echo "# --------------------------------------------------"
+  echo; ShowVariables suiteName; echo;
+
 }
 
 # --------------------------------------------------
 ValidateSuite()
-{
+{ if [ trace ]; then echo "function ValidateSuite()"; fi
   echo ValidateSuite - IMPLEMENT ME!
   return 0
 }
 # --------------------------------------------------
 function Suite()
-{
+{ if [ trace ]; then echo "function Suite()"; fi
   echo "Suite"
-  if [[ -e ${SUITE_DIR} ]]; then
+  if [[ -e ${suiteDir} ]]; then
     echo Updating Suite: ${SuiteName}
   else
     echo Creating New Suite: ${SuiteName}
@@ -71,26 +77,25 @@ function Suite()
 }
 # --------------------------------------------------
 function RepositoryURL()
-{
- 
-
-  if [[ -e ${suiteDir}/repositories/${localRepositoryName} ]]; then
-    echo "${suiteDir}/repositories/${localRepositoryName} was previously created"
+{ if [ trace ]; then echo "function RepositoryURL()"; fi
+  localRepositoryPath=${repositoriesDir}/${localRepositoryDirName}
+  if [[ -e ${localRepositoryPath} ]]; then
+    echo "${localRepositoryPath} was previously created"
     return 0
   else
-    echo "${suiteDir}/repositories/${localRepositoryName} will be created"
-    cd ${suiteDir}/repositories/
-    echo "git clone --bare $repositoryURL ${localRepositoryName}"
-    git clone --bare $repositoryURL ${localRepositoryName}
+    echo "${localRepositoryPath}  will be created"
+    cd ${repositoriesDir}
+    echo "git clone --bare $repositoryURL ${localRepositoryDirName}"
+    git clone --bare $repositoryURL ${localRepositoryDirName}
     return $?
   fi
 }
 # --------------------------------------------------
-function RepositoryUpstreamURL()
-{
+function SetUpstreamRepositoryURL()
+{ if [ trace ]; then echo "function SetUpstreamRepositoryURL()"; fi
 # .upstream-url
 
-  cd ${DEV1_SUITES}/${suiteName}/repositories/${localRepositoryName}
+  cd ${localRepositoryDirPath}
 
   upstreamURL=$(echo ${repository} | jq -r '.upstreamURL')
 
@@ -100,21 +105,19 @@ function RepositoryUpstreamURL()
     echo git remote set-url upstream ${upstreamURL}
       git remote set-url upstream ${upstreamURL}
     else
-    echo git remote add upstream ${upstreamU
-    RL}
+    echo git remote add upstream ${upstreamURL}
       git remote add upstream ${upstreamURL}
     fi
     git remote -v
   fi
- 
   return 0
 }
 # --------------------------------------------------
-function RepositoryOriginURL()
-{
+function SetOriginRepositoryURL()
+{ if [ trace ]; then echo "function SetOriginRepositoryURL()"; fi
 #  .origin-url
- cd ${DEV1_SUITES}/${suiteName}/repositories/${localRepositoryName}
- originUrl=$(echo ${repository} | jq -r '.originURL')
+  cd ${localRepositoryDirPath}
+  originUrl=$(echo ${repository} | jq -r '.originURL')
   if [[ "$originUrl" != "null" ]]; then
     discard=$(git ls-remote origin 2>&1 >/dev/null)
     if [[ "$?" == "0" ]]; then
@@ -126,7 +129,7 @@ function RepositoryOriginURL()
   return 0
 }
 # --------------------------------------------------
-function is_in_local() {
+function is_in_local() { if [ trace ]; then echo "function is_in_local()"; fi
     local branch=${1}
     local existed_in_local=$(git branch --list ${branch})
 
@@ -136,29 +139,44 @@ function is_in_local() {
         echo 1
     fi
 }
+
 function RepositoryBranchWorktree()
-{
+{ if [ trace ]; then echo "function RepositoryBranchWorktree()"; fi
   echo ""
   echo "Implement RepositoryBranchWorktree"
   echo ""
-  cd $localRepositoryPath
+  echo  cd ${localRepositoryDirPath}
+  cd ${localRepositoryDirPath}
+
   if [[ ! -e ${DEV1_SUITES}/worktrees/${localRepositoryName} ]]; then
     mkdir -p ${DEV1_SUITES}/worktrees/${localRepositoryName}
   fi
-  worktreePath=${DEV1_SUITES}/${suiteName}/worktrees/${localRepositoryName}/${branch}
-  if [[ ! -e ${worktreePath} ]]; then
-    is_in_local ${branch}
-    if [ "$?" == 0 ]; then
-        git worktree add ${worktreePath} ${branch}
+  worktreePath=${DEV1_SUITES}/${suiteName}/worktrees/${branch}/${localRepositoryName}
+
+  badWorktreePath=${DEV1_SUITES}/${suiteName}/worktrees/${localRepositoryName}.git/${branch}
+  # badWorktreeParentPath=${DEV1_SUITES}/${suiteName}/worktrees/${localRepositoryName}.git
+  # if [[ -e $badWorktreePath ]]; then
+  # if [ trace ]; then ShowVariables badWorktreePath worktreePath; fi
+  #   mkdir -p ${worktreePath%/*};           if [[ "$?" != "0" ]]; then return 1; fi
+  #   git worktree move  $badWorktreePath $worktreePath;  if [[ "$?" != "0" ]]; then return 1; fi
+  #   rmdir ${badWorktreePath%/*};
+  # fi
+  if [[ -e ${worktreePath} ]]; then
+    echo "A worktree for $branch on ${localRepositoryName} exists"
+  else
+    if [ "$(is_in_local ${branch})" == 0 ]; then
+        echo  git worktree add ${worktreePath} ${branch}
+        git worktree add ${worktreePath} ${branch}; if [[ "$?" != "0" ]];then return 1; fi
     else
-        git worktree add ${worktreePath}
+        echo git worktree add ${worktreePath} -b ${branch}
+        git worktree add ${worktreePath} -b ${branch} ; if [[ "$?" != "0" ]];then return 1; fi
     fi
   fi
   return 0
 }
 # --------------------------------------------------
 function RepositoryBranches()
-{
+{ if [ trace ]; then echo "function RepositoryBranches()"; fi
 # .branches array of branch names
   branches=$(echo ${repository} | jq '.branches')
   for branch in $(echo ${branches}|jq -r '.[]');  do
@@ -168,7 +186,7 @@ function RepositoryBranches()
 }
 # --------------------------------------------------
 function Repository()
-{
+{ if [ trace ]; then echo "function Repository()"; fi
 #{
 #  "url": "https://git.code.sf.net/p/flightgear/fgdata",
 #  "localRepositoryName": "flightgear-fgdata",
@@ -178,34 +196,38 @@ function Repository()
 #}
   repositoryURL=$(echo ${repository} | jq -r '.url')
   localRepositoryName=$(echo ${repository} | jq -r '.localRepositoryName')
-  localRepositoryPath=${DEV1_SUITES}/${suiteName}/repositories/${localRepositoryName}
+  localRepositoryDirName=${localRepositoryName}.git
+  localRepositoryDirPath=${DEV1_SUITES}/${suiteName}/repositories/${localRepositoryDirName}
+
+  ShowVariables localRepositoryName
+
   RepositoryURL;             if [[ "$?" != "0" ]];then return 1; fi
-  RepositoryUpstreamURL;     if [[ "$?" != "0" ]];then return 1; fi
-  RepositoryOriginURL;       if [[ "$?" != "0" ]];then return 1; fi
+  SetUpstreamRepositoryURL;     if [[ "$?" != "0" ]];then return 1; fi
+  SetOriginRepositoryURL;       if [[ "$?" != "0" ]];then return 1; fi
   RepositoryBranches;        if [[ "$?" != "0" ]];then return 1; fi
   return 0
 }
 # --------------------------------------------------
 # --------------------------------------------------
 function TaskName()
-{
+{ if [ trace ]; then echo "function TaskName()"; fi
   taskName=$(echo ${task} | jq -r '.taskName')
   mkdir -p ${DEV1_SUITES}/${suiteName}/tasks/${taskName}
 }
 # --------------------------------------------------
 GitWorktree()
-{
+{ if [ trace ]; then echo "function GitWorktree()"; fi
   localRepositoryName=$(echo ${gitWorktree}| jq -r '.localRepositoryName')
   ref=$(echo ${gitWorktree}| jq -r '.ref')
     echo "         ${DEV1_SUITES}/worktrees/${localRepositoryName}/${ref}"
   cat <<EOD  >>$workspaceFilePath
         },{
-				"path": "${DEV1_SUITES}/worktrees/${localRepositoryName}/${ref}",
+				"path": "${DEV1_SUITES}/${suiteName}/worktrees/${ref}/${localRepositoryName}",
 EOD
 }
 # --------------------------------------------------
 function CodeWorkspace()
-{
+{ if [ trace ]; then echo "function CodeWorkspace()"; fi
   workspaceName=$(echo $codeWorkspace| jq -r '.workspaceName')
   gitWorktrees=$(echo $codeWorkspace| jq  '.gitWorktrees')
   workspaceFilePath=${DEV1_SUITES}/${suiteName}/tasks/${taskName}/${workspaceName}.code-workspace
@@ -219,7 +241,7 @@ function CodeWorkspace()
 EOD
 
   for gitWorktree in $(echo $gitWorktrees | jq -c '.[]'); do
-      if [[ "$RETURN_CODE" == "0" ]]; then GitWorktree; RETURN_CODE=$?; fi
+      if [[ "$returnCode" == "0" ]]; then GitWorktree; returnCode=$?; fi
   done
   echo "         ./.vscode"
   cat <<EOD  >>$workspaceFilePath
@@ -232,28 +254,28 @@ EOD
   }
 EOD
 
-  return $RETURN_CODE
+  return $returnCode
 }
 # --------------------------------------------------
 function CodeWorkspaces()
-{
+{ if [ trace ]; then echo "function CodeWorkspaces()"; fi
 
   codeWorkspaces=$(echo ${task} | jq -r '.codeWorkspaces')
 
   for  codeWorkspace in $(echo ${codeWorkspaces} |jq  -c '.[]'); do
-    if [[ $RETURN_CODE == "0" ]]; then CodeWorkspace; RETURN_CODE=$?; fi
+    if [[ $returnCode == "0" ]]; then CodeWorkspace; returnCode=$?; fi
   done
 
-  return $RETURN_CODE
+  return $returnCode
   }
 # --------------------------------------------------
 function WorktreeSymlinks()
-{
+{ if [ trace ]; then echo "function WorktreeSymlinks()"; fi
   echo "Implement WorktreeSymlinks"
 }
 # --------------------------------------------------
 function Task()
-{
+{ if [ trace ]; then echo "function Task()"; fi
   TaskName
   CodeWorkspaces
   echo "Implement WorktreeSymlinks"
@@ -264,14 +286,14 @@ function Task()
 # --------------------------------------------------
 # --------------------------------------------------
 function ExistingSuiteConfig()
-{
+{ if [ trace ]; then echo "function ExistingSuiteConfig()"; fi
   echo
   echo "ExistingSuiteConfig"
   echo 
-  cd ${DEV1_SUITES}/${suiteName}
+  cd ${suiteDir}
   config=$(<config/${suiteName}.config.json)
 
-  #echo "${config}" |jq '.'>x
+  echo "${config}" |jq '.'>x
 
   repositories="$(echo ${config} |jq '.config.repositories')"
 
@@ -284,14 +306,15 @@ function ExistingSuiteConfig()
   done
   
   for  task in $(echo ${tasks} |jq  -c '.[]'); do
-    if [[ $RETURN_CODE == "0" ]]; then Task; fi
-    RETURN_CODE=$?
+    if [[ $returnCode == "0" ]]; then Task; fi
+    returnCode=$?
  done
     return 0
 }
 # --------------------------------------------------
 function ExistingSuiteWithoutConfig()
-{
+{ if [ trace ]; then echo "function ExistingSuiteWithoutConfig()"; fi
+
   echo 
   echo "ExistingSuiteWithoutConfig"
   return 1
@@ -299,7 +322,7 @@ function ExistingSuiteWithoutConfig()
 }
 # --------------------------------------------------
 function NewSuite()
-{
+{ if [ trace ]; then echo "function NewSuite()"; fi
   echo 
   echo "NewSuite"
   echo 
@@ -309,30 +332,38 @@ function NewSuite()
 # --------------------------------------------------
 # --------------------------------------------------
 
-RETURN_CODE=0
+returnCode=0
+if [[ "${DEV1_TRACE}" != "" ]]; then trace=1; fi
+if [[ "${DEV1_DEBUG}" != "" ]]; then debug=${DEV1_DEBUG}; fi
 askSuite $1
 
-if [[ "$RETURN_CODE" == "0" ]]; then ValidateSuite; fi
-if [[ "$RETURN_CODE" == "0" ]]; then Suite; fi
+if [[ "$returnCode" == "0" ]]; then ValidateSuite; fi
+if [[ "$returnCode" == "0" ]]; then Suite; fi
 if [[ "$?" == "0" ]]; then
   suiteDir=${DEV1_SUITES}/${suiteName}
-  configFile=${suiteDir}/config/${suiteName}.config.json
+  worktreesDir=${suiteDir}/worktrees
+  tasksDir=${suiteDir}/tasks
+  repositoriesDir=${suiteDir}/repositories
+  worktreesDir=${suiteDir}/worktrees
+  tasksDir=${suiteDir}/tasks
 
-  ShowVariables suiteName suiteDir configFile
+  suiteConfigFile=${suiteDir}/config/${suiteName}.config.json
 
-  if [[ -d ${suiteDir} && -e ${configFile} ]]; then
+  ShowVariables suiteName suiteDir suiteConfigFile
+
+  if [[ -d ${suiteDir} && -e ${suiteConfigFile} ]]; then
     ExistingSuiteConfig
-    RETURN_CODE=$?
+    returnCode=$?
   elif  [[ -d ${suiteDir} ]]; then
     ExistingSuiteWithoutConfig
-    RETURN_CODE=$?
+    returnCode=$?
   else
     newSuite
-    RETURN_CODE=$?
+    returnCode=$?
   fi
 fi
 
 
 # ------------------------------------------------------------------------------------------
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit $RETURN_CODE; else return $RETURN_CODE 2>/dev/null; fi
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit $returnCode; else return $returnCode 2>/dev/null; fi

@@ -23,7 +23,7 @@ if [[ "$build_options" == "$build_targets" ]]; then
   unset build_targets
 fi
 echo "cd $PWD"
-dev_dir=$(pwd)/${current_suite}dev
+dev_dir=$(pwd)/${currentSuite}dev
 if [[ -e /build.sh ]]; then
   build_script="./build.sh "
 elif [[ -e ${dev_dir}/build.sh ]]; then

@@ -9,6 +9,8 @@
 # Parameter sets:
 # no-parameters: use previous task
 # set -x #uncomment to debug
+
+
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "starting $DEV1/commands/ide $@"
   set -x
@@ -21,18 +23,18 @@ if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
   done
   shift    # shift the --
 fi
-if [[ "$current_task" == "" \
-   && -e $DEV1_SUITES/$current_suite/repositories/$current_suite ]]; then
-   cd $DEV1_SUITES/$current_suite/repositories/$current_suite
+if [[ "${currentTask}" == "" \
+   && -e $DEV1_SUITES/${currentSuite}/repositories/${currentSuite} ]]; then
+   cd $DEV1_SUITES/${currentSuite}/repositories/${currentSuite}
 fi
 echo "$(basename ${BASH_SOURCE[0]}) $@"
 echo "cd $(pwd)"
-if [[ -e $current_task.code-workspace ]]; then
-  echo "code $current_task.code-workspace"
-  code $current_task.code-workspace
-elif [[ -e $current_suite.code-workspace ]]; then  
-  echo "code $current_suite.code-workspace"
-  code $current_suite.code-workspace
+if [[ -e ${currentTask}.code-workspace ]]; then
+  echo "code ${currentTask}.code-workspace"
+  code ${currentTask}.code-workspace
+elif [[ -e ${currentSuite}.code-workspace ]]; then  
+  echo "code ${currentSuite}.code-workspace"
+  code ${currentSuite}.code-workspace
 else
   echo "code ."
   code .

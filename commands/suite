@@ -7,7 +7,7 @@ fi
 
 source $DEV1_COMMANDS/context $1 $2
 
-cd $DEV1_SUITES/$current_suite/tasks/$current_task
+cd $DEV1_SUITES/${currentSuite}/tasks/${currentTask}
 
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "end   /work/suites/dev1/worktrees/next/dev1/commands/suite"

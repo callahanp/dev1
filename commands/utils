@@ -1,0 +1,63 @@
+#!/bin/bash
+declare -g debug
+
+function GetJsonString()
+{ if (( $debug )); then set +x; fi
+  
+  local json="$2"
+  local jqueryExpression="$3"
+  echo "mapfile -t \"${1}\" < <(echo \"$json\" | jq -r \"$jqueryExpression\")"
+  mapfile -t "${1}" < <(echo "$json" | jq -r "$jqueryExpression")
+
+  if (( $debug )); then set -x; fi
+  return 0
+}
+function GetJsonArray()
+{ if (( $debug )); then set +x; fi
+  
+  local json="$2"
+  local jqueryExpression="$3"
+  echo "mapfile -t \"${1}\" < <(echo \"$json\" | jq -c \"$jqueryExpression\")"
+  mapfile -t "${1}" < <(echo "$json" | jq -c "$jqueryExpression")
+
+  if (( $debug )); then set -x; fi
+  return 0
+}
+function ShowJson()
+{ if (( $debug )); then set +x; fi
+  
+  while [[ "$1" != "" ]] ; do
+    echo "$1:     $(<<<"${!1}" jq '.')"
+    shift
+  done
+  if (( $debug )); then set -x; fi
+}
+function ShowArray()
+{ if (( $debug )); then set +x; fi
+  while [[ "$1" != "" ]] ; do
+    declare -n ref="$1"
+    echo; echo "$1:"; echo
+    for ((i=0; i < ${#ref[@]}; i += 1))
+    do
+      echo "$i  ${ref[$i]}"
+    done
+    shift 1
+  done
+  if (( $debug )); then set -x; fi
+}
+function ShowVariables()
+{ if (( $debug )); then set +x; fi
+  
+  while [[ "$1" != "" ]] ; do
+    echo "$1: ${!1}"
+    shift 1
+  done
+  if (( $debug )); then set -x; fi
+}
+function Separator ()
+{
+  echo
+  echo -------------------------- "$1" --------------------------
+  echo
+  if (( $debug )); then set +x; fi
+}

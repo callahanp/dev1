@@ -1,0 +1,31 @@
+#!/bin/bash
+# shellcheck disable=1091
+source "./utils"
+
+declare -g -a repositoriesArray=()
+declare -g -a tasksArray=()
+function wontPass()
+{
+  echo "Won't work"
+}
+json=$(cat /work/suites/Swift/project/Swift.config.json)
+echo GetJsonArray
+GetJsonArray repositoriesArray "$json" '.config.repositories[]'
+GetJsonArray  tasksArray "$json" '.config.tasks[]'
+declare s123=""
+echo getJsonArray for string
+GetJsonString  s123 "$json" '.config'
+ShowVariables s123
+echo "$s123 gets used"
+#mapfile -t tasks < <(echo $json| jq -c '.config.tasks[]')
+ShowArray tasksArray repositoriesArray
+echo "${repositoriesArray[0]}"
+
+# for ((i=0; $i < ${#tasksArray[@]}; i += 1))
+# do
+#   echo $i  echo ${tasksArray[$i]}
+# done
+echo counting
+echo tasksArraycount: ${#tasksArray[@]}
+
+

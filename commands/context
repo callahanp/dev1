@@ -82,7 +82,7 @@ if [[ "${currentTask}" == "" ]]; then
   currentTask=$(cat "$DEV1_USER_DATA/${currentSuite}_task")
 fi
 if [[ "${currentTask}" == "" ]]; then
-  currentWorkspace=$(cat "$DEV1_USER_DATA/i fg next${currentSuite}_${currentTask}_CodeWorkspace")
+  currentWorkspace=$(cat "$DEV1_USER_DATA/${currentSuite}_${currentTask}_CodeWorkspace")
 fi
 #--------------------------------------------------------
 if [[ ! "$DEV1_DEBUG" == "" ]]; then 

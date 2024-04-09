@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # dev1/commands/maint
-# Alias m="source $DEV1_COMMANDS/maint"
+# Alias m="source $DEV1_COMMANDS_PATH/maint"
 #
 # maint processes a json configuration file to create and maintain a git worktree based development
 # environtment for multi-root visual studio code workspaces.
@@ -10,20 +10,20 @@
 #
 # using bash source:
 
-#   source $DEV1_COMMANDS/maint <suite-name>
+#   source $DEV1_COMMANDS_PATH/maint <suite-name>
 
 # or through an alias: 
 #   m <suiteName>
 # or as a command
-#   $DEV1_COMMANDS/maint <suiteName>
-# ToDo - Path variables for all Suite Directories. Use $DEV1_SUITES only once. Fix all cd commands to use path variables
+#   $DEV1_COMMANDS_PATH/maint <suiteName>
+# ToDo - Path variables for all Suite Directories. Use $DEV1_SUITES_PATH only once. Fix all cd commands to use path variables
 # ToDo - Detect if all actions are already done, Log that they are and skip to operation Don't overwrite git with the same data.
 # ToDo - Logging Cleanup
 
 # shellcheck enable=require-variable-braces
 # shellcheck disable=1091
 
-source "${DEV1_COMMANDS}/utils"
+source "${DEV1_COMMANDS_PATH}/utils/utilityfunctions"
 
 # --------------------------------------------------
 
@@ -39,9 +39,9 @@ declare -g repositoryBranch=""
 function askSuite()
 { 
   if [[ "$1" == "" ]]; then
-    if pwd|grep -qP "${DEV1_SUITES}"; then
+    if pwd|grep -qP "${DEV1_SUITES_PATH}"; then
       suiteDir="$(pwd)"
-      suiteDir="${suiteDir##"${DEV1_SUITES}"/}"
+      suiteDir="${suiteDir##"${DEV1_SUITES_PATH}"/}"
       suiteDir="${suiteDir%%/*}"
     fi
     read -r -p  "Enter name of suite  default: (${suiteDir}):" s
@@ -144,7 +144,7 @@ function RepositoryBranchWorktree()
   echo  "cd ${localRepositoryDirPath}"
   cd "${localRepositoryDirPath}" ||return 1
 
-  gitBranchWorktreeContainerDirPath="${DEV1_SUITES}/${suiteName}/worktrees/${repositoryBranch}"
+  gitBranchWorktreeContainerDirPath="${DEV1_SUITES_PATH}/${suiteName}/worktrees/${repositoryBranch}"
   gitWorktreePath="${gitBranchWorktreeContainerDirPath}/${localRepositoryName}"
   mkdir -p "${gitBranchWorktreeContainerDirPath}"
 
@@ -195,7 +195,7 @@ ShowVariables repository
   GetJsonString repositoryUrl "${repository}" '.url'
   GetJsonString localRepositoryName "${repository}" '.localRepositoryName'
   localRepositoryDirName="${localRepositoryName}.git"
-  localRepositoryDirPath="${DEV1_SUITES}/${suiteName}/repositories/${localRepositoryDirName}"
+  localRepositoryDirPath="${DEV1_SUITES_PATH}/${suiteName}/repositories/${localRepositoryDirName}"
 
   ShowVariables localRepositoryName repositoryUrl
 
@@ -210,7 +210,7 @@ ShowVariables repository
 function TaskName()
 { if (( "${trace}" )); then echo "${space45} function TaskName()"; fi
   GetJsonString taskName "${task}" '.taskName'
-  mkdir -p "${DEV1_SUITES}/${suiteName}/tasks/${taskName}"
+  mkdir -p "${DEV1_SUITES_PATH}/${suiteName}/tasks/${taskName}"
 }
 # --------------------------------------------------
 GitWorktreeSymlink()
@@ -220,7 +220,7 @@ GitWorktreeSymlink()
   GetJsonString localRepositoryName "${gitWorktree}" '.localRepositoryName'
   GetJsonString ref "${gitWorktree}" '.ref'
   ShowVariables gitWorktree ref codeWorkspaceFilePath
-  gitWorktreePath="${DEV1_SUITES}/${suiteName}/worktrees/${ref}/${localRepositoryName}"
+  gitWorktreePath="${DEV1_SUITES_PATH}/${suiteName}/worktrees/${ref}/${localRepositoryName}"
 
 # be carefull gitWorktreePath vs codeWorkspaceFilePath - git worktree vs .code-workspace
 
@@ -255,7 +255,7 @@ function CodeWorkspace()
   GetJsonString workspaceName "${codeWorkspace}" '.workspaceName'
   
   ShowVariables codeWorkspace workspaceName taskName
-  codeWorkspaceFilePath="${DEV1_SUITES}/${suiteName}/tasks/${taskName}/${workspaceName}.code-workspace"
+  codeWorkspaceFilePath="${DEV1_SUITES_PATH}/${suiteName}/tasks/${taskName}/${workspaceName}.code-workspace"
   echo "Building ${codeWorkspaceFilePath} including folder paths:"
   echo "         ../../project"
 
@@ -292,11 +292,11 @@ function CodeWorkspaces()
   ShowArray taskCodeWorkspacesArray
   local i3
   for ((i3=0; i3 < ${#taskCodeWorkspacesArray[@]}; i3 += 1)); do
-    codeWorkspace="${taskCodeWorkspacesArray[$i]}"
+    codeWorkspace="${taskCodeWorkspacesArray[${i}]}"
     CodeWorkspace
     returnCode="$?"
   done
- echo "Finished CodeWorkspaces - i3 = $i3"
+ echo "Finished CodeWorkspaces - i3 = ${i3}"
   return ${returnCode}
   }
 
@@ -331,14 +331,14 @@ function ExistingSuiteConfig()
     repository="${repositoriesArray[${i}]}"
     echo "Processing Repository ${repository}"
            if Repository; then Separator "Repository"; else echo "Repository Error"; ShowVariables repository; return 1; fi
-    echo "Finished Repository - i = $i"
+    echo "Finished Repository - i = ${i}"
   done
   for ((i2=0; i2 < ${#tasksArray[@]}; i2 += 1)); do
     task="${tasksArray[${i}]}"
     echo "Processing Task ${task}"
       Task;
     returnCode="$?"
-    echo "Finished Task - j = $i2"
+    echo "Finished Task - j = ${i2}"
   done
     return 0
 }
@@ -398,7 +398,7 @@ if (( debug != 0 )) ; then echo "yes we are debugging"; fi
 # if [[ "$returnCode" == "0" ]]; then ValidateSuite; fi
 suiteName=""
 if askSuite "$1"; then
-  suiteDir="${DEV1_SUITES}/${suiteName}"
+  suiteDir="${DEV1_SUITES_PATH}/${suiteName}"
   worktreesDir="${suiteDir}/worktrees"
   tasksDir="${suiteDir}/tasks"
   repositoriesDir="${suiteDir}/repositories"

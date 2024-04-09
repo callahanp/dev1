@@ -3,201 +3,210 @@
 # Todo - resolve multiple matches for partial workspace name
 # Todo - Implement trace
 # Todo - Simplify and save data in suiteDir.
-# Suite, task and code workspace are required to start.
-# where you get the values:
-# If just suite is provided:
-#   If the next previous run specified a task, use that one
-#   If not, or if "?" present a list of tasks to choose from
-# If Suite and task are known 
-#     and the task contains only one,  use that one
-#     if a previous code-workspace was used, use that
-#     if not present or if "?" a list of code-workspaces to choose.  
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/context $@"
+
+source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then RETURN_OR_EXIT="exit"; else RETURN_OR_EXIT="return"; fi
+
+if [[ "$DEV1_DEBUG" != "" ]]; then
+  echo "starting $DEV1_COMMANDS_PATH/context " "$@"
   set -x
 fi
-function context_debug(){
-   echo "Debug ${BASH_SOURCE[0]} $@ currentSuite: ${currentSuite} currentTask: ${currentTask} currentWorkspace: ${currentWorkspace}"
-}
-# validate and use wildcards
-unset currentSuite
-unset currentTask
-unset currentWorkspace
-if [[ ! "$1" == "--" ]]; then
-  currentSuite="$1"
+
+if [[ "$DEV1_DEBUG" != "" ]]; then
+  echo "starting ${DEV1}/commands/context " "$@"
+  set -x
 fi
+
+# validate and use wildcards
+unset argSuite
+unset argTask
+unset argWorkspace
+haveSuite=0; haveTask=0; haveCodeWorkspace=0;
+
+ideCommand=0
+buildCommand=0
+runCommand=0
+suiteCommand=0
+unrecognizedCommand=0
 if [[ ! "$2" == "--" ]]; then
-  currentTask="$2"
+argSuite="$2"
 fi
 if [[ ! "$3" == "--" ]]; then
-  currentWorkspace="$3"
+  argTask="$3"
 fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 1; fi
-#--------------------------------------------------------
-if [[ "${currentWorkspace}" == "" && "${currentTask}" == "$DEV1_CURRENT_TASK" && "${currentSuite}"="$DEV1_CURRENT_SUITE" ]]; then
-  currentWorkspace=$DEV1_CURRENT_PROJECT
+if [[ ! "$4" == "--" ]]; then
+  argCodeWorkspace="$4"
 fi
-if [[ "${currentTask}" == "" &&  "${currentSuite}" == "$DEV1_CURRENT_SUITE" ]]; then
+
+if [[ "$1" != "--" ]]; then
+  argCommand="$1"
+  case "${argCommand}" in
+    ide) ideCommand=1;;
+    build) buildCommand=1;;
+    run:) runCommand=1;;
+    suite) suiteCommand=1;;
+    *) unrecognizedCommand=1;;
+  esac
+fi
+if (( ideCommand || suiteCommand )); then
+    echo "ide or suite context expects up to three parameters"
+    echo "  suiteName"
+    echo "  taskName, usually a git commit, tag, or branch name"
+    echo "  code-workspace name which is usually omitted but can be provided in special cases"
+fi
+if (( buildCommand )); then
+    echo "Build context expects up to five parameters"
+    echo "  suiteName"
+    echo "  taskName, usually a git commit, tag, or branch name"
+    echo "  variant, debug, relwithdebinfo, minsize-rel"
+    echo "  build options name"
+    echo "  build parameters file"
+  fi
+  if (( runCommand )); then
+    echo "Run context expects up to five parameters"
+    echo "  suiteName"
+    echo "  taskName, usually a git commit, tag, or branch name"
+    echo "  variant, debug, relwithdebinfo, minsize-rel"
+    echo "  run options name"
+    echo "  run parameters file"
+  fi
+ if (( unrecognizedCommand )); then
+  echo "WTF is $1"
+  if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit 1; else return 1 2>/dev/null; fi
+ fi
+
+have3=0
+have2=0
+have1=0
+
+if [[ "${argSuite}" != "" ]]; then haveSuite=1; fi
+if [[ "${argTask}" != "" ]]; then haveTask=1; fi
+if [[ "${argCodeWorkspace}" != "" ]]; then haveCodeWorkspace=1; fi
+# 0 is false, 1 is true.
+
+
+
+if (( haveSuite && haveTask && haveCodeWorkspace )); then
+  have3=1;
+fi
+if (( have3 && (suite_command || ideCommand ) )); then
+# tTODO Do we really need both
+    export DEV1_CURRENT_SUITE_NAME=$argSuite
+    export DEV1_CURRENT_TASK=$argTask
+    export DEV1_CURRENT_CODE_WORKSPACE=$argCodeWorkspace
+
+    export currentSuite=$argSuite
+    export currentTask=$argTask
+    export currentWorkspace=$argTask
+
+    cd "$DEV1_SUITES_PATH/${argSuite}/tasks/${argTask}" \
+      ||  ${RETURN_OR_EXIT}
+
+  set +x
+  ${RETURN_OR_EXIT}
+fi
+if (( haveSuite && haveTask && !haveWorkspace )); then
+  have2=1;
+fi
+if ((  have2 && (suiteCommand || ideCommand ) )); then
+
+    export DEV1_CURRENT_SUITE_NAME=$argSuite
+    export DEV1_CURRENT_TASK=$argTask
+    export currentSuite=$argSuite
+    export currentTask=$argTask
+
+    cd $DEV1_SUITES_PATH/${argSuite}/tasks/${argTask} \
+      || ${RETURN_OR_EXIT}
+
+ ${RETURN_OR_EXIT}
+fi
+if (( haveSuite && ! (haveTask || haveCodeWorkspace) )); then
+  have1=1;
+fi
+if ((  have1 && suiteCommand  )); then
+    export DEV1_CURRENT_SUITE_NAME=$argSuite
+    export currentSuite=$argSuite
+
+    cd $DEV1_SUITES_PATH/${argSuite}/tasks/ \
+      || ${RETURN_OR_EXIT}
+
+  taskCount=$(ls -1q|wc)
+  if (( taskCount == 1 )); then
+    currentTask=$(ls-l)
+    export currentTask
+    export DEV1_CURRENT_TASK=$currentTask
+  elif (( taskCount == 0 )); then
+    echo
+    echo You need to create task $currentTask
+    echo
+    cd $DEV1_SUITES_PATH/${argSuite}/tasks/ || ${RETURN_OR_EXIT}
+  else
+    echo
+    echo " Pick a task"
+    echo
+    ls -1
+    echo
+    ${RETURN_OR_EXIT}
+  fi
+fi
+
+
+
+if [[ "$PWD" == "${DEV1_SUITES_PATH}" ]]; then atSuites=1; fi
+if [[ "$PWD" =~ ${DEV1_SUITES_PATH}/ ]]; then inSuites=1; fi
+
+if [[ "${argTask}" != "" ]]; then haveTask=1; fi
+if [[ "${argWorkspace}" != "" ]]; then haveWorkspace=1; fi
+
+if [[ $haveSuite == 0 ]]; then echo Have Suite; fi
+if [[ $haveTask == 0 ]]; then echo Have Task; fi
+if [[ $haveWorkspace == 0 ]]; then echo Have haveWorkspace; fi
+
+atSuites=1; inSuites=1; atTasks=1; inTasks=1; atTask=1; inTasks=1;
+
+if [[ $inSuites && "$PWD" =~ "/tasks$" ]]; then atTasks=1; fi
+if [[ $inSuites && "$PWD" =~ "/tasks/" ]]; then inTasks=1; fi
+if [[ $inTasks && "$PWD" =~ /tasks/[:alnum:_]*$ ]]; then atTask=1; fi
+if [[ $inTasks && "$PWD" =~ /tasks/[:alnum:_]*/ ]]; then inTask=1; fi
+
+if [[ $atSuites == 1 ]]; then echo $atSuites At suites; fi
+if [[ $inSuites == 1 ]]; then echo In suites; fi
+if [[ $atTasks == 1 ]]; then echo At Tasks; fi
+if [[ $inTasks == 1 ]]; then echo In Tasks; fi
+if [[ $atTask == 1 ]]; then echo At Task; fi
+if [[ $inTask == 1 ]]; then echo In Task; fi
+
+# any operation should work if we are already there and give no additional context info
+# $DEV1_SUITES_PATH/<suite-name>/tasks/<task-name>
+
+if (( ! (have1 || have2 || have3) & atTask )); then
+
+  scanPathSuite=$(pwd)
+  scanPathTask=${scanPathSuite#${DEV1_SUITES_PATH}/}
+  scanPathSuite=${scanPathTask%%/*}
+  scanPathTask=${scanPathTask#${scanPathSuite}/[a-zA-Z_]*s/}
+  scanPathTask=${scanPathTask%%/*}
+  ShowVariables scanPathSuite scanPathTask
+  
+    export DEV1_CURRENT_SUITE_NAME=$scanPathSuite
+    export DEV1_CURRENT_TASK=$scanPathTask
+    export currentSuite=$scanPathSuite
+    export currentTask=$scanPathTask
+
+    cd $DEV1_SUITES_PATH/${scanPathSuite}/tasks/${scanPathTask} \
+      || ${RETURN_OR_EXIT}
+
+ ${RETURN_OR_EXIT}
+fi
+ ${RETURN_OR_EXIT}
+
+if [[ "${currentWorkspace}" == "" && "${currentTask}" == "$DEV1_CURRENT_TASK" && "${currentSuite}" == "$DEV1_CURRENT_SUITE_NAME" ]]; then
+  CodeWorkspaceName=$DEV1_CURRENT_PROJECT
+fi
+if [[ "${currentTask}" == "" &&  "${currentSuite}" == "$DEV1_CURRENT_SUITE_NAME" ]]; then
   currentTask=$DEV1_CURRENT_TASK
 fi
 if [[ "${currentSuite}" == "" ]]; then
-  ${currentSuite}=$DEV1_CURRENT_SUITE
+  currentSuite=$DEV1_CURRENT_SUITE_NAME
 fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 2; fi
-#--------------------------------------------------------
-# parse pwd to determine if suite, task and CodeWorkspace are defined by the current directory 
-# as a directory link, or as a code workspace
-PWD=$(pwd)
-suitepath=${PWD##${DEV1_SUITES}/}
-if [[ ! "${suitepath}" == "$PWD" ]]; then
-	pwd_suite=${suitepath%%/*}
-	taskpath="${suitepath##${pwd_suite}/tasks/}"
-	if [[ ! "$taskpath" == "$suitepath" ]]; then
-		pwd_task="${taskpath%%/*}"
-		if [[ ! -e $CodeWorkspacename ]]; then
-		  pwd_CodeWorkspace=""
-		else
-			pwd_CodeWorkspace=$(cat CodeWorkspacename)
-		fi
-	fi
-fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 3; fi
-#--------------------------------------------------------
-if [[ "${currentSuite}" == "" || ! ${currentSuite} == pwd_suite && ! $PWD_suite == "" ]]; then
-  ${currentSuite}="$pwd_suite"
-  currentTask="$pwd_task"
-  currentWorkspace="$pwd_CodeWorkspace"
-else
-  if [[ -e last_suite ]]; then
-    ${currentSuite}=$(cat last_suite)
-	fi
-fi
-if [[ "${currentSuite}" == "" ]]; then
-  ${currentSuite}=$(cat "$DEV1_USER_DATA/${currentSuite}")
-fi
-if [[ "${currentTask}" == "" ]]; then
-  currentTask=$(cat "$DEV1_USER_DATA/${currentSuite}_task")
-fi
-if [[ "${currentTask}" == "" ]]; then
-  currentWorkspace=$(cat "$DEV1_USER_DATA/${currentSuite}_${currentTask}_CodeWorkspace")
-fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then 
-#--------------------------------------------------------
-  echo "------------------------------"
-  echo 'validate suite'
-  echo "------------------------------"
-  context_debug 4a;
-fi
-if [[ ! -d $DEV1_SUITES/${currentSuite} ]] then 
-  compgen -G "$DEV1_SUITES/*${currentSuite}*" >/dev/null
-  if [[ "$?" == "1" ]]; then
-    ${currentSuite}=""$(compgen -G "$DEV1_SUITES/$currentSuite}*" >/dev/null
-  )
-  else
-    possible_suites=$
-  fi
-  #---------------------------------------------------------------------------------------------
-  if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 5 "possible_suites: ${possible_suites}"; fi
-  #---------------------------------------------------------------------------------------------
-
-    if [[ "${#possible_suites[@]}" == "1" ]]; then
-      ${currentSuite}="$(basename ${possible_suites[0]})"
-    else
-      i=1
-      pad=" "
-      for suite in ${possible_suites[@]}; do
-        echo "$pad $i  $suite"
-        if [[ "$i" -gt "10" ]]; then
-          pad=""
-        fi
-      done
-      while [[ "$selected" == "" ]]; do
-        read selected
-        if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_suites[@]}" ]]; then
-          suite=$(basename ${possible_suites[$selected]})
-          return
-        fi
-        echo "Enter a number between 1 and ${#possible_suites[@]}"
-      done
-  fi 
-fi
-
-if [[ "${currentSuite}" == "" ]]; then
-  return 1
-fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4b; fi
-#--------------------------------------------------------
-
-
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "------------------------------"
-  echo 'validate task'
-  echo "------------------------------"
-fi
-if [[ ! -d $DEV1_SUITES/${currentSuite}/tasks/${currentTask} ]] then 
-
-  compgen -G "$DEV1_SUITES/${currentSuite}/tasks/*${currentTask}*" >/dev/null
-  if [[ $? == 1 ]]; then
-    currentTask=""; return 1
-  fi
-  unset possible_tasks
-  possible_tasks=$(compgen -G "$DEV1_SUITES/${currentSuite}/tasks/*${currentTask}*")
-
-
-  #---------------------------------------------------------------------------------------------
-  if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 6 possible tasks: $possible_tasks; fi
- #---------------------------------------------------------------------------------------------
-  if [[ "${#possible_tasks[@]}" == "1" ]]; then
-    currentTask="$(basename ${possible_tasks[0]})"
-  else
-    i=1
-    pad=" "
-    for task in ${possible_tasks[@]}; do
-      echo "$pad $i  suite: ${currentSuite} task: $task"
-      if [[ "$i" -gt "10" ]]; then
-        pad=""
-      fi
-    done
-    while [[ "$selected" == "" ]]; do
-      read selected
-      if [[ "$selected" =~ ^[0-9]+$  && "$selected" -gt 0 && "$selected" -le "${#possible_tasks[@]}" ]]; then
-        currentTask=$(basename ${possible_tasks[$selected]})
-        return
-      fi
-      echo "Enter a number between 1 and ${#possible_tasks[@]}"
-    done
-  fi
-fi
-
-if [[ "${currentTask}" == "" ]]; then
-  return 1
-fi
-#--------------------------------------------------------
-if [[ ! "$DEV1_DEBUG" == "" ]]; then context_debug 4c; fi
-#--------------------------------------------------------
-export DEV1_SUITE="${currentSuite}"
-export DEV1_TASK="${currentTask}"
-export DEV1_CODE_WORKSPACE="${currentWorkspace}"
-
-cd $DEV1_SUITES/${currentSuite}/tasks/${currentTask}
-
-return 0
-# A DEV1 command will set the process context variables for suite, task, and CodeWorkspace in that order.  For each of them, the source of the values can be 
-# a parameter
-# a process environment variable
-# an element of the current directory path
-# a last used value from DEV_USER_DATA
-
-# Once the suite name is known,  task names for the suite can be enumerated. Then the current task is identified, and a list of CodeWorkspaces associated with the task can be listed. Once CodeWorkspace, task and suite are all identified, the context is established and used by all commands run in that process
-
-
-# DEV1_CURRENT_CONTEXT:
-# 	<suite-name>/<task-name>/<CodeWorkspace-name>
-# DEV1_CURRENT_SUITE:
-# DEV1_CURRENT_TASK:
-# DEV1_CURRENT_CODE_WORKSPACE:

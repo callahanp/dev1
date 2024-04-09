@@ -10,34 +10,39 @@
 #   - Project not found among the suites
 #   - Build script not found in the project
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/build $@"
+  echo "starting $DEV1/commands/build @*"
   set -x
 fi
+# shellcheck disable=SC2124
 parameters="$@"
 context_parameters=${parameters%--*}
-source $DEV1/commands/context $context_parameters
+# shellcheck source=/work/suites/dev1/tasks/dev1/commands/context
+source "$DEV1_COMMANDS_PATH/context" 'build' "$context_parameters"
+
 parameters="${parameters/${context}--/}"
 build_options=${parameters%--*}
 build_targets=${parameters#*--}
 if [[ "$build_options" == "$build_targets" ]]; then 
   unset build_targets
 fi
-echo "cd $PWD"
-dev_dir=$(pwd)/${currentSuite}dev
-if [[ -e /build.sh ]]; then
+build_script=""
+# shellcheck disable=SC2154
+dev_dir=$DEV1_SUITES_PATH/${currentSuite}/project
+if [[ -e /build.bash ]]; then
   build_script="./build.sh "
-elif [[ -e ${dev_dir}/build.sh ]]; then
-  build_script=$dev_dir/build.sh
+elif [[ -e ${dev_dir}/build.bash ]]; then
+  build_script=$dev_dir/build.bash
 fi
+ShowVariables build_script build_options build_targets
 if [[ "$build_script" != "" ]]; then
-cmd="$dev_dir/build.sh  $build_options -- $build_targets"
-echo $cmd
+cmd="$build_script  $build_options -- $build_targets"
+echo "$cmd"
 $cmd
 else
- echo "Did not find a build.sh file in $pwd"
+ echo "Did not find a build.bash file in $(pwd)"
 fi
 
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "ending  DEV1/commands/build $@"
+  echo "ending  DEV1/commands/build $"
   set +x
 fi

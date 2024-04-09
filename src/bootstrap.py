@@ -146,9 +146,9 @@ def git_init(repositories_dir, repo_name, branch):
     chdir(repositories_dir)
     run_result = subprocess.run(["git", "init", "--bare", "-b", branch, repo_path], capture_output=True, check=False)
     logs.log("git init --bare "+ repo_path,space_after=1)
-    dev1_user_data=os.environ['DEV1_USER_DATA']
-    chdir(dev1_user_data)
-    dev1_user_temp=os.path.join(dev1_user_data, 'temp')
+    DEV1_CONTEXT_CACHE_PATH=os.environ['DEV1_CONTEXT_CACHE_PATH']
+    chdir(DEV1_CONTEXT_CACHE_PATH)
+    dev1_user_temp=os.path.join(DEV1_CONTEXT_CACHE_PATH, 'temp')
     run_result = subprocess.run(["git", "clone", repo_path, 'temp'], capture_output=True, check=False)
     chdir(dev1_user_temp)
     pathlib.Path(os.path.join(dev1_user_temp,'build.sh')).touch()

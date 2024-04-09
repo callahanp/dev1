@@ -10,13 +10,19 @@
 # no-parameters: use previous task
 # set -x #uncomment to debug
 
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then RETURN_OR_EXIT="exit"; else RETURN_OR_EXIT="return"; fi
 
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/ide $@"
+  echo "starting $DEV1/commands/ide $*"
   set -x
 fi
-source $DEV1_COMMANDS/context "$1" "$2" "$3"
-if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
+# shellcheck source="$DEV1_COMMANDS_PATH/context"
+source "$DEV1_COMMANDS_PATH/context" "ide" "$1" "$2" "$3"
+if [[ "$?" == "1" ]]; then 
+  if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit ${returnCode}; 
+  else  ${RETURN_OR_EXIT}
+  fi
+fi
 if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
   while [[ ! "$1" == "--" ]]; do
     shift  # shift options before the --
@@ -24,22 +30,23 @@ if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
   shift    # shift the --
 fi
 if [[ "${currentTask}" == "" \
-   && -e $DEV1_SUITES/${currentSuite}/repositories/${currentSuite} ]]; then
-   cd $DEV1_SUITES/${currentSuite}/repositories/${currentSuite}
+   && -e ${DEV1_SUITES_PATH}/${currentSuite}/repositories/${currentSuite} ]]; then
+   cd "${DEV1_SUITES_PATH}/${currentSuite}/repositories/${currentSuite}" \
+   ||  ${RETURN_OR_EXIT}
 fi
-echo "$(basename ${BASH_SOURCE[0]}) $@"
+echo "$(basename ${BASH_SOURCE[0]}) " "$*"
 echo "cd $(pwd)"
 if [[ -e ${currentTask}.code-workspace ]]; then
   echo "code ${currentTask}.code-workspace"
-  code ${currentTask}.code-workspace
-elif [[ -e ${currentSuite}.code-workspace ]]; then  
+  code "${currentTask}.code-workspace"
+elif [[ -e ${currentSuite}.code-workspace ]]; then 
   echo "code ${currentSuite}.code-workspace"
-  code ${currentSuite}.code-workspace
+  code "${currentSuite}.code-workspace"
 else
   echo "code ."
   code .
 fi
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "ending   $DEV1/commands/run $@"
+  echo "ending   $DEV1/commands/run $*"
   set +x
 fi

@@ -1,0 +1,87 @@
+#!/bin/bash
+declare -g _debug=0
+
+function GetJsonString()
+{
+  local json="$2"
+  local jqueryExpression="$3"
+  #echo "mapfile -t ${1} < <(echo $json | jq -r $jqueryExpression)"
+  mapfile -t "${1}" < <(echo "$json" | jq -r "$jqueryExpression")
+  return 0
+}
+function GetJsonArray()
+{
+  local json="$2"
+  local jqueryExpression="$3"
+  echo "mapfile -t \"${1}\" < <(echo \"$json\" | jq -c \"$jqueryExpression\")"
+  mapfile -t "${1}" < <(echo "$json" | jq -c "$jqueryExpression")
+  return 0
+}
+function ShowJson()
+{
+  while [[ "$1" != "" ]] ; do
+    echo "$1:"     
+    echo $1 | ${!1} jq '.'
+    shift
+  done
+  return 0
+}
+function ShowArray()
+{
+  while [[ "$1" != "" ]] ; do
+    declare -n ref="$1"
+    echo; echo "$1:"; echo
+    for ((i=0; i < ${#ref[@]}; i += 1))
+    do
+      echo "$i  ${ref[$i]}"
+    done
+    shift 1
+  done
+}
+function ShowVariables()
+{
+  while [[ "$1" != "" ]] ; do
+    echo "$1: ${!1}"
+    shift 1
+  done
+}
+function Separator ()
+{
+  echo
+  echo -------------------------- "$1" --------------------------
+  echo
+}
+function FindRepositories()
+{
+  local originalDirectory
+  originalDirectory=$(pwd)
+  count=0
+  while IFS= read -r -d '' gitRepo
+  do
+    (( count++ ))
+    echo "${gitRepo}"
+    cd "${gitRepo}" || ls -lah "${gitRepo}"
+    git remote -v
+  done <   <(find "${DEV1_SUITES_PATH}" -name '*.git' -print0)
+  echo "Found $count repositories"
+  cd "${originalDirectory}" || return 1
+}
+function CountTasks()
+{
+  echo 1
+}
+function UnsetDEV1EnvVars()
+{
+while IFS='=' read -r -d '' n v; do
+    if [[ "$n" =~ ^DEV1_ ]]; then
+      printf "unset '%s'\n" "$n"
+      unset $n
+    fi
+done < <(env -0)
+}
+
+declare -a -g suiteList=()
+declare -a -g tasklist=()
+declare -a -g codeWorkspaceFiles=()
+
+read -a suiteList <<< "$(ls -q $DEV1_SUITES_PATH)"

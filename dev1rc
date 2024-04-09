@@ -1,34 +1,40 @@
 #!/bin/bash
 #set -x
 restore_dir=$(pwd)
-SCRIPT_PATH="${BASH_SOURCE}"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
 while [ -L "${SCRIPT_PATH}" ]; do
-  SCRIPT_DIR="$(cd -P "$(dirname "${SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
-  SCRIPT_PATH="$(readlink "${SCRIPT_PATH}")"
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd)"
+  SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
   [[ ${SCRIPT_PATH} != /* ]] && SCRIPT_PATH="${SCRIPT_DIR}/${SCRIPT_PATH}"
 done
-SCRIPT_PATH="$(readlink -f "${SCRIPT_PATH}")"
-SCRIPT_DIR="$(cd -P "$(dirname -- "${SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+SCRIPT_DIR="$(cd -P "$(dirname -- "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd)"
 # SCRIPT_DIR is guaranteed to be the directory where this script lives
 # no matter where you call it from, or how you got to it.
-cd ${SCRIPT_DIR}
+cd "$SCRIPT_DIR" || return 1
 # This should leave us at the top level of dev1 - No matter what.
 
 echo "starting dev1rc"
 export DEV1=$(pwd)
-if [[ "$DEV1_SUITES" == "" ]]; then
+if [[ "$DEV1_SUITES_PATH" == "" ]]; then
     echo "Unable to find DEV1 suites.  "
-    echo "Please define and export DEV1_SUITES in your ~/.bashrc"
+    echo "Please define and export DEV1_SUITES_PATH in your ~/.bashrc"
     echo " or place DEV1 in a directory named suites"
     return 
 fi
-export DEV1_COMMANDS=$DEV1/commands
-export DEV1_HELPERS=$DEV1/helpers
-export DEV1_SRC=$DEV1/src
-export DEV1_USER_DATA=~/.dev1
-mkdir -p $DEV1_USER_DATA
-cd $DEV1
+export DEV1_COMMANDS_PATH=$DEV1/commands
+export DEV1_CONTEXT_CACHE_PATH="$HOME/.dev1"
+mkdir -p "$DEV1_CONTEXT_CACHE_PATH"
+cd "${DEV1}"  || return 1
+# shellcheck enable=require-variable-braces
+# shellcheck disable=2142
+# shellcheck disable=2139
 alias suites="cd $(pwd)/..; ls ./"
+# shellcheck disable=2142
+
+#TODO: use bash functions for these instead of aliases
+
+alias new="f(){ source $(pwd)/commands/new \$@; unset -f f; }; f"
 alias context="f(){ source $(pwd)/commands/context \$@; unset -f f; }; f"
 alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"
 alias build="f(){ source $(pwd)/commands/build \$@; unset -f f; }; f"
@@ -43,19 +49,14 @@ function copy_alias(){
 alias $2="$(alias $1 |sed -e s/.*=// -e s/\'//g )"
 
 }
+copy_alias new n
 copy_alias context c
-
 copy_alias suite s
 copy_alias ide i
 copy_alias build b
 copy_alias run r
 copy_alias debug g
 
+alias suites="cd ${DEV1_SUITES_PATH} || return 1; ls -1"
 
-
-alias suites="cd $DEV1_SUITES; ls -1"
-for d in $(find $DEV1_SUITES -mindepth 1 -maxdepth 1 -type d ); do
-     suite=$(basename $d)
-     alias $suite="source $(pwd)/commands/suite $suite \$@"
-done
-cd $restore_dir
+cd "$restore_dir" || return 1

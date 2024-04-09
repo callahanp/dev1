@@ -1,15 +1,12 @@
 #!/bin/bash
 # source only
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "start /work/suites/dev1/worktrees/next/dev1/commands/suite"
-  set -x
-fi
 
-source $DEV1_COMMANDS/context $1 $2
+# shellcheck enable=require-variable-braces
 
-cd $DEV1_SUITES/${currentSuite}/tasks/${currentTask}
 
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "end   /work/suites/dev1/worktrees/next/dev1/commands/suite"
-  set +x
-fi
+currentSuite=""
+currentTask=""
+# shellcheck disable=1091
+source "${DEV1_COMMANDS_PATH}/context" "suite" "$@"
+
+cd "${DEV1_SUITES_PATH}/${currentSuite}/tasks/${currentTask}" || return 1

@@ -1,47 +1,63 @@
-# DEV1 Commands 
+# DEV1 Commands
 
-DEV1 commands take two sets of parameters separated by --:
+Dev1 is quite capable of managing a complex and dynamic development environment containing multiple application and library repositories, both personal forks and upstream.  It supports these with the usual development activities across branches, tags, specific commits, specific build variants and sets of environment variables and run time options.
+
+Features:
+    - Multiple Libraries
+    - Multiple Applications
+    - Personal Forks
+    - Clones of Personal Forks or Upstream repositories for the same repository
+    - Clones are done with git clone --bare.  Git worktrees are created for any required commit, tag or branc
+    - Pull from upstream, push to origin (fork) or push and pull from origin
+    - ssh access to remote repositories (SourceForge, GitLab, GitHub)
+    - Only one copy of a given worktree is needed to support source editing and building
+    - Symbolic links to worktrees used for code workspaces and builds
+    - JSON configuration file
+    - Git commits, tags and branches organzized as separate tasks with connections to requred worktrees
+    - Multiple Code workspaces with selected Git Worktrees for each Task are possible
+    - Separate source and build directories for multiple variants for selected git commits, tags or branches
+
+DEV1 includes wrapper commands on individual project's take on three processes:
+
+- starting visual studio code
+- building using a custom script for the project
+- running software
+
+The wrappers are aliased in dev1rc as functions that will source the corresponding dev1 command.
+
+- i and ide - This typicaly starts visual studio code
+- b and build - run project build scripts
+- r and run - run scripts that run specific executables
+
+These aliases can be used from any directory and must in that case specify a context.
+Context information that must be supplied varies between the three commands but is used to specify
+
+- the suite
+- the task, usually a particular git reference.  In other words, a git commit, tag or branch.
+- which build variant should be built or run
+- which of several run scripts to run
+- which of several .code-workspace files to use with code or code-insiders
+
+devrc is aliased to run itself
+
+take two sets of parameters separated by --:
 
 - context
 - command-related
 
-Context parameters include suite-name task-name & CodeWorkspace-name
+Context parameters include suite-name task-name codeWorkspace-name & build-variant. They can be in any order
+Context parameters are optional, and if not provided will be populated from
+
+- The current directory's path
+- The previous supplied value
+
+Context parameters will be checked against the project's directory structure to ensure they are valid, and unique.
+
 Command-related parameters are passed to scripts that perform one of the folling actions:
 
-- c or context <suite-name> <task-name> <CodeWorkspace-name>
-- add-repo <suite-name> -- <repo-url> <local-repo-name> <initial-branch>
-- add-worktree <suite-name> -- <local-repo-name> <branch-tag-or-commit> 
-- add-task   [[<suite-name>] <task-name>] -- <local-repo-name> <branch-tag-or-commit> <build-type> [<task-name>]
-- i or ide   [ <suite-name> <task-name> ]
-- b or build [ <suite-name> <task-name> ] -- [<build-sepecific-parameters>]
-- r or run   [ <suite-name> <task-name> ] -- [<run-sepecific-parameters>]
+- s or suite   suite-name task-name codeWorkspace-name build-variant
+- i or ide     suite-name task-name codeWorkspace-name
+- b or build   suite-name task-name build-variant -- [build-sepecific-parameters]
+- r or run     suite-name task-name  -- [run-sepecific-parameters]
 
 build and run commands include a facility to add configurable parameters.  Users can create a standard set of parmeters for the suite, and for each task.
-
-Future:
-Parameter Configurations are found in
-
--$DEV1_TASK_DIR/build_param*.txt
--$DEV1_SUITE_DIR/build_param*.txt
-
--$DEV1_TASK_DIR/run_param*.txt
--$DEV1_SUITE_DIR/run_param*.txt
-
-parameters obtained from the task location override similar parameters from the suite directory.
-
-
-## Find and Execute 
-
-The several of the native commands in dev0 are basically forwarders that find the appropriate script to run and pass along parameters to it.
-
-For example the Dev0 run command will search the Dev0 task tree, the active worktree, the primary worktree for a script named run.sh, change to that script's folder and run it with any parameters remaining in $@.  
-
-The build, install and debug scripts operate the same way, except in cases where there is no build.sh install.sh or debug.sh to be found.  In that case it will report that no script was found and make an attempt at a generic approach.  
-
-For example, for a build, change directory to any that have CMakeLists.txt without a parent directory having one and just run CMake with the supplied paremeters running debug will run gdb for the last executable run under dev0's purview, again using any parameters provided. Sometimes that will actually work.  Sometimes you'll have to write a specific script to do what you actually want.
-
-Command Aliases look like this:
-alias run='f(){ source /work/suites/dev1/commands/run $@;unset -f f; }; f'
-
-The alias creates a function f.  f runs a bash source command with any extra parameters
-specified in $@, then deletes itself.  After creating f, f is run.

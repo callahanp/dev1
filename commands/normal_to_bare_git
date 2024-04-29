@@ -1,5 +1,5 @@
 
-source $DEV1_COMMANDS/suite "$1" 
+source $DEV1_COMMANDS_PATH/suite "$1" 
 cd $DEV1_SUITES/$suite/repositories
 mkdir temp
 for $d in *; do

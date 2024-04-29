@@ -1,6 +1,6 @@
 #!/bin/bash
 # dev1/commands/add
-# Alias a="$DEV1_COMMANDS/add"
+# Alias a="$DEV1_COMMANDS_PATH/add"
 #
 # a suite <suite> <repo-url> <local-repo-name> <development-branch>
 # a suite <suite> <repo-url> <development-branch>
@@ -325,8 +325,8 @@ fi
 return 1
 
 set +x
-source $DEV1_COMMANDS/show
-source $DEV1_COMMANDS/suite $suite $branch_name
+source $DEV1_COMMANDS_PATH/show
+source $DEV1_COMMANDS_PATH/suite $suite $branch_name
 if [[ "$DEV1_DEBUG" != "" ]]; then
   echo "ENDING   $BASH_SOURCE $@"
 fi

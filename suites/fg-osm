@@ -5,7 +5,7 @@
 #
 source $DEV1_HELPERS/log_f 
 user=callahanp
-m="$DEV1_COMMANDS/app"
+m="$DEV1_COMMANDS_PATH/app"
 # set -x
 $m  operation create \
     loglevel  LOG_LEVEL_FLOOD \

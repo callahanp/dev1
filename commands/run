@@ -1,46 +1,45 @@
 #!/bin/bash
 
-# if the project is found, execute the run script in 
-# the project_directory of the project given in $1. 
-# pass the entire list of command line parameters 
-# and options to that script.
-
-# Errors:
-#   - Environment not set for DEV1
-#   - Project not found among the suites
-#   - run script not found in the project
-
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/run $@"
+  echo "starting $DEV1/commands/run $*"
   set -x
 fi
-source $DEV1_COMMANDS/context "$1" "$2" 
+
+echo "cd $(pwd)"
+echo "${BASH_SOURCE[0]})" "$@"
+
+source "$DEV1_COMMANDS_PATH/context" "$1" "$2" 
 
 if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
 
-if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
-  while [[ ! "$1" == "--" ]]; do
-    shift  # shift options before the --
-  done
+for (( i=0; i<shifts; i++ )); do
+  shift  # shift options before the --
+done
+if [[ "$1" == '--' ]]; then
   shift    # shift the --
 fi
 
-echo "$(basename ${BASH_SOURCE[0]}) $@"
-echo "cd $(pwd)"
+run1="$DEV1_TASK_PATH/run.bash"
+run2="$DEV1_SUITE_PATH/project/run.bash"
 
-while [[ ! "$1" == "--" && ! "$1" == "" ]]; do shift; done
-
-if [[ -e run.sh ]]; then
-  echo "./run.sh"
-  ./run.sh  $@
-else 
-  run_script=$(find -L ./ -maxdepth 2 -name run_script.sh)
-  if [[ ! "run_script" == "" ]]; then
-    echo "$run_script $@"
-    $run_script $@
-  fi
+if [[ -e "$run1" ]]; then
+  runScript=$run1
+elif [[ -e "$run2" ]]; then
+  runScript="$run2"
+else
+  echo "Could not fine run.bash in either of"
+  echo "    $run1"
+  echo " or $run2"
+  echo "you need to provide one"
+  RETURN_OR_EXIT
 fi
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "ending   $DEV1/commands/run $@"
-  set +x
-fi
+suite=$DEV1_SUITE_NAME
+ref=$DEV1_TASK_NAME
+variant=$DEV1_BUILD_VARIANT_NAME
+runOptions=$(cat "$DEV1_RUN_OPTIONS_PATH")
+runParameters=$(cat "$DEV1_RUN_PARAMETERS_PATH")
+# shellcheck disable=SC2086
+# shellcheck disable=SC2068
+LogAction  $runScript  "$suite" "$ref" "$variant" "$runOptions" "$@"
+$runScript  "$suite" "$ref" "$variant" "$runOptions" "$@"
+PrintActionLog

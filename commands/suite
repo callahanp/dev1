@@ -4,9 +4,9 @@
 # shellcheck enable=require-variable-braces
 
 
-currentSuite=""
-currentTask=""
-# shellcheck disable=1091
-source "${DEV1_COMMANDS_PATH}/context" "suite" "$@"
 
-cd "${DEV1_SUITES_PATH}/${currentSuite}/tasks/${currentTask}" || return 1
+# shellcheck disable=1091
+source "${DEV1_COMMANDS_PATH}/context"  "$@"
+
+cd "${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/tasks/${DEV1_TASK_NAME}" || return 1
+pwd

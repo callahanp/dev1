@@ -21,7 +21,7 @@ function ShowJson()
 {
   while [[ "$1" != "" ]] ; do
     echo "$1:"     
-    echo $1 | ${!1} jq '.'
+    echo "$1" | ${!1} jq '.'
     shift
   done
   return 0
@@ -38,13 +38,20 @@ function ShowArray()
     shift 1
   done
 }
-function ShowVariables()
-{
-  while [[ "$1" != "" ]] ; do
-    echo "$1: ${!1}"
-    shift 1
-  done
+declare -g _debug_on
+function DumpVars() {
+  (set +x; if (( _debug_on )); then #
+    echo " "; 
+    echo --------------------------------------------------------------; 
+    while  [[ "$1" != "" ]]; do declare -p "${1}"; shift; done; \
+    echo --------------------------------------------------------------; \
+  fi )
 }
+
+function dumpvars(){
+  DumpVars "$@"
+}
+
 function Separator ()
 {
   echo
@@ -72,16 +79,28 @@ function CountTasks()
 }
 function UnsetDEV1EnvVars()
 {
+# we're unsetting. v is discarded
+# shellcheck disable=SC2034
 while IFS='=' read -r -d '' n v; do
     if [[ "$n" =~ ^DEV1_ ]]; then
       printf "unset '%s'\n" "$n"
-      unset $n
+      unset "$n"
     fi
 done < <(env -0)
 }
+if [[ "$DEV1_DEBUG" != "" ]]; then _debug_on=1; fi
+declare -Ag actionLog
+function LogAction(){
 
-declare -a -g suiteList=()
-declare -a -g tasklist=()
-declare -a -g codeWorkspaceFiles=()
-
-read -a suiteList <<< "$(ls -q $DEV1_SUITES_PATH)"
+local -; set +x
+  d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
+  while [[ ${actionLog["$d"]} != "" ]]; do
+    d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
+  done 
+  actionLog["$d"]="$*"
+  # shellcheck disable=SC2086
+  echo ${actionLog["$d"]}
+}
+function PrintActionLog(){
+ ( local -; set +x;  for x in "${!actionLog[@]}"; do printf "\n%s: %s\n" "$x" "${actionLog[$x]}"; done )
+}

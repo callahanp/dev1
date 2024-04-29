@@ -1,0 +1,8 @@
+#!/bin/bash
+source "$DEV1_COMMANDS_PATH/context" "$@"
+if [[ "$DEV1_PROJECT_PATH" != "" ]]; then 
+  cd  "$DEV1_PROJECT_PATH" || echo error could not cd to "$DEV1_TASK_PATH"
+else
+  echo error "$DEV1_TASK_PATH" is empty
+fi
+pwd

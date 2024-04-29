@@ -19,13 +19,13 @@ if [[ ! -e "$DEV1_SUITES_PATH/${suiteName}" ]]; then
   export DEV1_PROJECT_PATH="$DEV1_SUITE_PATH/project"
   export DEV1_REPOSITORIES_PATH="$DEV1_SUITE_PATH/repositories"
   export DEV1_WORKTREES_PATH="$DEV1_SUITE_PATH/worktrees"
-  export DEV1_CURRENT_SUITE_NAME_NAME="${suiteName}"
+  export DEV1_SUITE_NAME_NAME="${suiteName}"
   export DEV1_CONTEXT_CACHE_PATH="$HOME/.dev1"
   mkdir -p "$DEV1_CONTEXT_CACHE_PATH"
   mkdir -p "$DEV1_PROJECT_PATH"
   mkdir -p "$DEV1_REPOSITORIES_PATH"
   mkdir -p "$DEV1_WORKTREES_PATH"
-  cacheEnvVar "DEV1_CURRENT_SUITE_NAME_PATH"
+  cacheEnvVar "DEV1_SUITE_NAME_PATH"
 
   export DEV1_SUITE_NAME=$suiteName
   export DEV1_TASK_NAME=""

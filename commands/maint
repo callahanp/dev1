@@ -23,7 +23,7 @@
 # shellcheck enable=require-variable-braces
 # shellcheck disable=1091
 
-source "${DEV1_COMMANDS_PATH}/utils/utilityfunctions"
+source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
 
 # --------------------------------------------------
 
@@ -54,7 +54,7 @@ function askSuite()
   fi
   suiteDir=${suiteName}
   echo "# --------------------------------------------------"
-  #echo; ShowVariables suiteName; echo
+  #echo; DumpVars suiteName; echo
 }
 # --------------------------------------------------
 function Suite()
@@ -91,8 +91,7 @@ function SetUpstreamRepositoryURL()
 
   cd "${localRepositoryDirPath}" || return 1
 
-  upstreamURL="$(<<<"${repository}" jq -r '.upstreamURL')"
-
+  GetJsonString upstreamURL "${repository}" '.upstreamURL'
   if [[ "${upstreamURL}" != "null" && "${upstreamURL}" != "" ]]; then
 
     if git ls-remote upstream >/dev/null 2>&1; then
@@ -132,9 +131,9 @@ function is_in_local() {
     local existed_in_local
     existed_in_local=$(git branch --list "${branch}")
     if [[ ${existed_in_local} != "" ]]; then
-        echo 0
+        return 0
     else
-        echo 1
+        return 1
     fi
 }
 
@@ -152,12 +151,12 @@ function RepositoryBranchWorktree()
     echo "A worktree for ${repositoryBranch} on ${localRepositoryName} exists in ${gitWorktreePath}"
   else
     echo "Creating worktree for branch ${repositoryBranch} in ${gitWorktreePath}"
-    if  is_in_local "${repositoryBranch}"; then
+    if  is_in_local "${repositoryBranch}" ]]; then
         echo  "git worktree add ${gitWorktreePath} ${repositoryBranch}"
         if git worktree add "${gitWorktreePath}" "${repositoryBranch}"; then return 0; else return 1; fi
     else
-        echo git worktree add "${gitWorktreePath}" -b "${branch}"
-        if git worktree add "${gitWorktreePath}" -b "${branch}"; then return 0; else return 1; fi
+        echo git worktree add "${gitWorktreePath}" -b "${repositoryBranch}"
+        if git worktree add "${gitWorktreePath}" -b "${repositoryBranch}"; then return 0; else return 1; fi
     fi
   fi
   return 0
@@ -176,7 +175,7 @@ repositoryBranchesArray=()
     repositoryBranch="${repositoryBranch%\"}"
     if RepositoryBranchWorktree ; then 
       Separator "done Repository Branch Worktree"; 
-    else echo "RepositoryBranchWorktree error"; ShowVariables repositoryBranch;return 1; fi
+    else echo "RepositoryBranchWorktree error"; DumpVars repositoryBranch;return 1; fi
   done
   return 0
 }
@@ -190,14 +189,14 @@ function Repository()
 #    "next"
 #  ]
 #}
-ShowVariables repository
+DumpVars repository
   repositoryUrl=""
   GetJsonString repositoryUrl "${repository}" '.url'
   GetJsonString localRepositoryName "${repository}" '.localRepositoryName'
   localRepositoryDirName="${localRepositoryName}.git"
   localRepositoryDirPath="${DEV1_SUITES_PATH}/${suiteName}/repositories/${localRepositoryDirName}"
 
-  ShowVariables localRepositoryName repositoryUrl
+  DumpVars localRepositoryName repositoryUrl
 
   if RepositoryUrl;then
   if SetUpstreamRepositoryURL; then
@@ -219,14 +218,14 @@ GitWorktreeSymlink()
   ref=""
   GetJsonString localRepositoryName "${gitWorktree}" '.localRepositoryName'
   GetJsonString ref "${gitWorktree}" '.ref'
-  ShowVariables gitWorktree ref codeWorkspaceFilePath
+  DumpVars gitWorktree ref codeWorkspaceFilePath
   gitWorktreePath="${DEV1_SUITES_PATH}/${suiteName}/worktrees/${ref}/${localRepositoryName}"
 
 # be carefull gitWorktreePath vs codeWorkspaceFilePath - git worktree vs .code-workspace
 
   cat <<EOD  >>"${codeWorkspaceFilePath}"
         },{
-				"path": "${gitWorktree}",
+				"path": "${gitWorktreePath}",
 EOD
 # each task directory gets each of the symlinks covering any of the code workspaces
   worktreeSymLinkPath=${tasksDir}/${taskName}/${localRepositoryName#*-}
@@ -236,10 +235,10 @@ EOD
 # each build variant directory for a branch needs a symlink to the corresponding sources on that branch.
 
   shopt -s nullglob
-  ShowVariables buildsDir ref
+  DumpVars buildsDir ref
   echo "${buildsDir}"/"{ref}}"/*
   for d in "${buildsDir}"/"${ref}"/*; do
-    ShowVariables d
+    DumpVars d
     worktreeSymLinkPath="${d}/${localRepositoryName#*-}"
       if [[ -e "${worktreeSymLinkPath}" ]]; then rm "${worktreeSymLinkPath}"; fi
       echo ln -s  "${gitWorktreePath}" "${d}/${localRepositoryName#*-}"
@@ -254,7 +253,7 @@ function CodeWorkspace()
   workspaceName=""
   GetJsonString workspaceName "${codeWorkspace}" '.workspaceName'
   
-  ShowVariables codeWorkspace workspaceName taskName
+  DumpVars codeWorkspace workspaceName taskName
   codeWorkspaceFilePath="${DEV1_SUITES_PATH}/${suiteName}/tasks/${taskName}/${workspaceName}.code-workspace"
   echo "Building ${codeWorkspaceFilePath} including folder paths:"
   echo "         ../../project"
@@ -289,7 +288,7 @@ function CodeWorkspaces()
 { if (( "${trace}" )); then echo "${space45} function CodeWorkspaces"; fi
   taskCodeWorkspacesArray=()
   GetJsonArray taskCodeWorkspacesArray "${task}" '.codeWorkspaces[]'
-  ShowArray taskCodeWorkspacesArray
+  dumpVars taskCodeWorkspacesArray
   local i3
   for ((i3=0; i3 < ${#taskCodeWorkspacesArray[@]}; i3 += 1)); do
     codeWorkspace="${taskCodeWorkspacesArray[${i}]}"
@@ -327,14 +326,15 @@ function ExistingSuiteConfig()
   GetJsonArray tasksArray "${config}"  '.config.tasks[]'
 
   local i1
-  for ((i1=0; i1 < ${#repositoriesArray[@]}; i1 += 1)); do
-    repository="${repositoriesArray[${i}]}"
-    echo "Processing Repository ${repository}"
-           if Repository; then Separator "Repository"; else echo "Repository Error"; ShowVariables repository; return 1; fi
-    echo "Finished Repository - i = ${i}"
-  done
+  # for ((i1=0; i1 < ${#repositoriesArray[@]}; i1 += 1)); do
+  #   repository="${repositoriesArray[${i}]}"
+  #   echo "Processing Repository ${repository}"
+  #          if Repository; then Separator "Repository"; else echo "Repository Error"; DumpVars repository; return 1; fi
+  #   echo "Finished Repository - i = ${i}"
+  # done
+
   for ((i2=0; i2 < ${#tasksArray[@]}; i2 += 1)); do
-    task="${tasksArray[${i}]}"
+    task="${tasksArray[${i2}]}"
     echo "Processing Task ${task}"
       Task;
     returnCode="$?"
@@ -412,7 +412,7 @@ if askSuite "$1"; then
 
   if Suite; then
 
-    ShowVariables suiteName suiteDir suiteConfigFile
+    DumpVars suiteName suiteDir suiteConfigFile
 
     if [[ -d ${suiteDir} && -e ${suiteConfigFile} ]]; then
       ExistingSuiteConfig

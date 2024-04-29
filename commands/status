@@ -6,28 +6,28 @@ function has() {
    if [[ $count = 1 ]];then
    file="file"
    fi
-   if [[ $count > 0 ]];then
+   if [[ $count -gt 0 ]];then
      echo "$tab$tab $count $2 $file"
    fi
 }
 
 
-echo Dev0 Environment Variables and Current Project
+echo Dev1 Environment Variables and Current Project
 tab="    "
 echo
 echo "$tab DEV1:            $DEV1"
 if [[ "$1" == "verbose" ]]; then
-  echo "$tab" DEV1_COMMANDS:    $DEV1_COMMANDS
-  echo "$tab" DEV1_HELPERS:    $DEV1_HELPERS
+  echo "$tab" "DEV1_COMMANDS:    $DEV1_COMMANDS"
+  echo "$tab" "DEV1_HELPERS:     $DEV1_HELPERS"
   shift
 fi
 
-Application
-source $DEV1_COMMANDS/task $1 $2 $3
+source $DEV1_COMMANDS_PATH/task $1 $2 $3
 if [[ $? ]]; then
-  echo "$tab Current Suite:      ${currentSuite}"
-  echo "$tab Current Activity:   $current_activity"
-  echo "$tab Current Repository: $current_repository"
+  echo "$tab Current Suite:      $DEV1_SUITE_NAME"
+  echo "$tab Current Activity:   $DEV1_TASK_NAME"
+  echo "$tab Current Worktrees : TBD"
+# TODO list current suite and task's worktrees
 fi
 if [[ "$1" == "brief" ]]; then
   exit 0

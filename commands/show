@@ -1,7 +1,7 @@
 #!/bin/bash
 # Show suite file and directory structure
 
-$DEV1_COMMANDS/suite "$1"
+$DEV1_COMMANDS_PATH/suite "$1"
 for dir in $DEV1_SUITES/${suite}}*; do
   echo 
   echo "$suite directory & symlink structure:"

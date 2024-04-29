@@ -20,11 +20,10 @@ if [[ "$DEV1_SUITES_PATH" == "" ]]; then
     echo "Unable to find DEV1 suites.  "
     echo "Please define and export DEV1_SUITES_PATH in your ~/.bashrc"
     echo " or place DEV1 in a directory named suites"
-    return 
+    return
 fi
 export DEV1_COMMANDS_PATH=$DEV1/commands
-export DEV1_CONTEXT_CACHE_PATH="$HOME/.dev1"
-mkdir -p "$DEV1_CONTEXT_CACHE_PATH"
+export DEV1_TEMPLATES_PATH=$DEV1/templates
 cd "${DEV1}"  || return 1
 # shellcheck enable=require-variable-braces
 # shellcheck disable=2142
@@ -36,6 +35,7 @@ alias suites="cd $(pwd)/..; ls ./"
 
 alias new="f(){ source $(pwd)/commands/new \$@; unset -f f; }; f"
 alias context="f(){ source $(pwd)/commands/context \$@; unset -f f; }; f"
+alias project="f(){ source $(pwd)/commands/project \$@; unset -f f; }; f"
 alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"
 alias build="f(){ source $(pwd)/commands/build \$@; unset -f f; }; f"
 alias run="f(){ source $(pwd)/commands/run \$@;unset -f f; }; f"

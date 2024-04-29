@@ -1,48 +1,57 @@
 #!/bin/bash
-
-# if the suite is found, execute the build script in 
-# the project_directory of the suitegiven in $1. 
-# pass the entire list of command line parameters 
-# and options to that script.
-
-# Errors:
-#   - Environment not set for DEV1
-#   - Project not found among the suites
-#   - Build script not found in the project
 if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/build @*"
+  echo "starting $DEV1/commands/build $*"
   set -x
 fi
-# shellcheck disable=SC2124
-parameters="$@"
-context_parameters=${parameters%--*}
-# shellcheck source=/work/suites/dev1/tasks/dev1/commands/context
-source "$DEV1_COMMANDS_PATH/context" 'build' "$context_parameters"
 
-parameters="${parameters/${context}--/}"
-build_options=${parameters%--*}
-build_targets=${parameters#*--}
-if [[ "$build_options" == "$build_targets" ]]; then 
-  unset build_targets
+echo "cd $(pwd)"
+echo "${BASH_SOURCE[0]})" "$@"
+
+source "$DEV1_COMMANDS_PATH/context" "$1" "$2" 
+
+if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
+echo $shifts
+for (( i=0; i<shifts; i++ )); do
+  shift  # shift options before the --
+done
+if [[ "$1" == '--' ]]; then
+  shift    # shift the --
 fi
-build_script=""
-# shellcheck disable=SC2154
-dev_dir=$DEV1_SUITES_PATH/${currentSuite}/project
-if [[ -e /build.bash ]]; then
-  build_script="./build.sh "
-elif [[ -e ${dev_dir}/build.bash ]]; then
-  build_script=$dev_dir/build.bash
-fi
-ShowVariables build_script build_options build_targets
-if [[ "$build_script" != "" ]]; then
-cmd="$build_script  $build_options -- $build_targets"
-echo "$cmd"
-$cmd
+
+cd "$DEV1_TASK_PATH" || ( echo "error - " "$DEV1_TASK_PATH" " not found";  $RETURN_OR_EXIT; ) 
+build1="$DEV1_TASK_PATH/build.bash"
+build2="$DEV1_SUITE_PATH/project/build.bash"
+
+if [[ -e "$build1" ]]; then
+  buildScript=$build1
+elif [[ -e "$build2" ]]; then
+  buildScript="$build2"
 else
- echo "Did not find a build.bash file in $(pwd)"
+  echo "Could not fine build.bash in either of"
+  echo "    $build1"
+  echo " or $build2"
+  echo "you need to provide one"
+  RETURN_OR_EXIT
 fi
+DumpVars DEV1_BUILD_VARIANT_PATH \
+          DEV1_BUILD_OPTIONS_PATH \
+          DEV1_BUILD_PARAMETERS_PATH \
+          buildScript
+variant=$(cat "$DEV1_BUILD_VARIANT_PATH")
+options=$(cat "$DEV1_BUILD_OPTIONS_PATH")
+parameters=$(cat "$DEV1_BUILD_PARAMETERS_PATH")
+suite=$DEV1_SUITE_NAME
+ref=$DEV1_TASK_NAME
+# shellcheck disable=SC1090
+# shellcheck disable=SC2086
+# shellcheck disable=SC2068
+LogAction source $buildScript $suite $ref $variant $options $@ $parameters
+# shellcheck disable=SC1090
+# shellcheck disable=SC2086
+# shellcheck disable=SC2068
+source $buildScript $suite $ref $variant $options $@ $parameters
+PrintActionLog
 
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "ending  DEV1/commands/build $"
-  set +x
-fi
+
+
+

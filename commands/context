@@ -1,10 +1,62 @@
 #!/bin/bash
-# Todo - choose one of multiple code workspaces in a task with partial workspace name
-# Todo - resolve multiple matches for partial workspace name
-# Todo - Implement trace
-# Todo - Simplify and save data in suiteDir.
+#
+# Dev1's operations, ide, build and run depend on
+# the settings for suite, and task, are primary
+# and establish the environment for all the other
+# sttings required by each operation.
+#
+# ide requires suite, task & code-workspace names
+# build requires suite, task, variant, build options/parameters
+# run requires suite, task, variant, run options/parameters.
+#
+# attempting to set all of these in one context handler proved daunting.
+#
+# Suite and task can be changed at will, but the others once set up tend to be stable.
 
-source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+# What we want to be able to do is to specify an operation and without specifying anything,
+# use what was chosen previously
+
+# Suite and Task are set in the context routine, but the remaining ones are set using a utility
+# command that sets the name and persists the selection as current. Context will pick up
+# whatever was declared current for a given task with a simple copy.
+
+# Suites are Apps, or sets of related Apps
+# Tasks are esslsentially things that need doing for specific git refs. A git ref is either
+# a specific commit, a tag or a branch.  Tasks usually have the same name as  a tag or branch.
+
+# The tasks directory stores the current copy of currentBuildOptions is a copy of some other
+
+# There is no restriction on how many of each type of selection you can have.
+# These are placed in the project file, with the names a, b and c chosen to be meaningful in whichever branch needs them.
+# They are optional, if any are not present, an empty file will be used for the current.whatever
+
+# Names are arbitrary and you can mix and match using wildcards to put a set of them into effect different names to current for any of them
+
+# Selections are made by name, and theoretically you could use the suite name for everything
+
+
+# name.task
+# name.code-workspace
+# name.variant
+# name.Build.Options,
+# name.Build.Parameters,
+# name.Run.Options,
+# name.Run.Parameters
+
+# current.suite.name (an empty file in DEV1_SUITES_PATH)
+
+# current.task
+# current.code-workspace
+# current.variant
+# current.Build.Options
+# current.Build.Parameters
+# current.Run.Options
+# current.Run.Parameters
+
+# shellcheck disable=SC1091
+source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
+
+#echo "--------------------- Starting Context ---------------------"
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then RETURN_OR_EXIT="exit"; else RETURN_OR_EXIT="return"; fi
 
@@ -12,201 +64,311 @@ if [[ "$DEV1_DEBUG" != "" ]]; then
   echo "starting $DEV1_COMMANDS_PATH/context " "$@"
   set -x
 fi
-
+source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
 if [[ "$DEV1_DEBUG" != "" ]]; then
   echo "starting ${DEV1}/commands/context " "$@"
   set -x
 fi
 
-# validate and use wildcards
-unset argSuite
-unset argTask
-unset argWorkspace
-haveSuite=0; haveTask=0; haveCodeWorkspace=0;
-
-ideCommand=0
-buildCommand=0
-runCommand=0
-suiteCommand=0
-unrecognizedCommand=0
-if [[ ! "$2" == "--" ]]; then
-argSuite="$2"
+shifts=0
+if [[ "$1" == "reset" ]]; then
+unset DEV1_SUITE_NAME DEV1_TASK_NAME DEV1_CODE_WORKSPACE_PATH \
+              DEV1_BUILD_VARIANT_PATH \
+              DEV1_BUILD_OPTIONS_PATH DEV1_BUILD_PARAMETERS_PATH\
+              DEV1_RUN_VARIANT_PATH \
+              DEV1_RUN_OPTIONS_PATH DEV1_RUN_PARAMETERS_PATH
+  shift
+  (( shifts++ ))
 fi
-if [[ ! "$3" == "--" ]]; then
-  argTask="$3"
-fi
-if [[ ! "$4" == "--" ]]; then
-  argCodeWorkspace="$4"
-fi
-
-if [[ "$1" != "--" ]]; then
-  argCommand="$1"
-  case "${argCommand}" in
-    ide) ideCommand=1;;
-    build) buildCommand=1;;
-    run:) runCommand=1;;
-    suite) suiteCommand=1;;
-    *) unrecognizedCommand=1;;
-  esac
-fi
-if (( ideCommand || suiteCommand )); then
-    echo "ide or suite context expects up to three parameters"
-    echo "  suiteName"
-    echo "  taskName, usually a git commit, tag, or branch name"
-    echo "  code-workspace name which is usually omitted but can be provided in special cases"
-fi
-if (( buildCommand )); then
-    echo "Build context expects up to five parameters"
-    echo "  suiteName"
-    echo "  taskName, usually a git commit, tag, or branch name"
-    echo "  variant, debug, relwithdebinfo, minsize-rel"
-    echo "  build options name"
-    echo "  build parameters file"
-  fi
-  if (( runCommand )); then
-    echo "Run context expects up to five parameters"
-    echo "  suiteName"
-    echo "  taskName, usually a git commit, tag, or branch name"
-    echo "  variant, debug, relwithdebinfo, minsize-rel"
-    echo "  run options name"
-    echo "  run parameters file"
-  fi
- if (( unrecognizedCommand )); then
-  echo "WTF is $1"
-  if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit 1; else return 1 2>/dev/null; fi
- fi
-
-have3=0
-have2=0
-have1=0
-
-if [[ "${argSuite}" != "" ]]; then haveSuite=1; fi
-if [[ "${argTask}" != "" ]]; then haveTask=1; fi
-if [[ "${argCodeWorkspace}" != "" ]]; then haveCodeWorkspace=1; fi
-# 0 is false, 1 is true.
-
-
-
-if (( haveSuite && haveTask && haveCodeWorkspace )); then
-  have3=1;
-fi
-if (( have3 && (suite_command || ideCommand ) )); then
-# tTODO Do we really need both
-    export DEV1_CURRENT_SUITE_NAME=$argSuite
-    export DEV1_CURRENT_TASK=$argTask
-    export DEV1_CURRENT_CODE_WORKSPACE=$argCodeWorkspace
-
-    export currentSuite=$argSuite
-    export currentTask=$argTask
-    export currentWorkspace=$argTask
-
-    cd "$DEV1_SUITES_PATH/${argSuite}/tasks/${argTask}" \
-      ||  ${RETURN_OR_EXIT}
-
-  set +x
-  ${RETURN_OR_EXIT}
-fi
-if (( haveSuite && haveTask && !haveWorkspace )); then
-  have2=1;
-fi
-if ((  have2 && (suiteCommand || ideCommand ) )); then
-
-    export DEV1_CURRENT_SUITE_NAME=$argSuite
-    export DEV1_CURRENT_TASK=$argTask
-    export currentSuite=$argSuite
-    export currentTask=$argTask
-
-    cd $DEV1_SUITES_PATH/${argSuite}/tasks/${argTask} \
-      || ${RETURN_OR_EXIT}
-
- ${RETURN_OR_EXIT}
-fi
-if (( haveSuite && ! (haveTask || haveCodeWorkspace) )); then
-  have1=1;
-fi
-if ((  have1 && suiteCommand  )); then
-    export DEV1_CURRENT_SUITE_NAME=$argSuite
-    export currentSuite=$argSuite
-
-    cd $DEV1_SUITES_PATH/${argSuite}/tasks/ \
-      || ${RETURN_OR_EXIT}
-
-  taskCount=$(ls -1q|wc)
-  if (( taskCount == 1 )); then
-    currentTask=$(ls-l)
-    export currentTask
-    export DEV1_CURRENT_TASK=$currentTask
-  elif (( taskCount == 0 )); then
-    echo
-    echo You need to create task $currentTask
-    echo
-    cd $DEV1_SUITES_PATH/${argSuite}/tasks/ || ${RETURN_OR_EXIT}
+if  [[ "$1" != "" && "$1" != "--" ]]; then
+  suiteName=""
+  mapfile -t foundExactSuite\
+      < <(find "$DEV1_SUITES_PATH/"\
+            -maxdepth 1 -type d -name "$1")
+  mapfile -t foundWildcardSuite\
+      < <(find "$DEV1_SUITES_PATH/"\
+        -maxdepth 1 -type d -regex ".*$1.*"  -printf "%f\n")
+                                  if [[ $DEV1_DEBUG != "" ]]; then
+                                    DumpVars foundExactSuite foundWildcardSuite
+                                  fi
+  if [[ ${foundExactSuite[0]} != "" ]]; then
+    suiteName=$(basename "${foundExactSuite[0]}")
+  elif [[ "${#foundWildcardSuite[@]}" == "1" ]]; then
+    suiteName=${foundWildcardSuite[0]}
+    shift;
+  elif [[ "${#foundWildcardSuite[@]}" == "0" ]]; then
+    suiteName=""
   else
-    echo
-    echo " Pick a task"
-    echo
-    ls -1
-    echo
-    ${RETURN_OR_EXIT}
+    echo ""
+    echo " $1 matched more than one suite.  Please choose one by number:"
+    echo ""
+    for (( i=0; i<${#foundWildcardSuite[@]}; i++ )); do
+      (( i++ ))
+      echo "$j ${foundWildcardSuite[i]}"
+    done
+    unset choice
+    read -rp "choice: " choice
+    choice=$(( choice - 1 ))
+    suiteName="${foundWildcardSuite[$choice]}"
+  fi
+fi
+
+if [[ "$suiteName" != "" ]]; then
+  DEV1_SUITE_NAME="$suiteName"
+  (( shifts++ ))
+  shift
+else
+  if [[ -e $DEV1_SUITES_PATH/current.suite.name ]]; then
+    DEV1_SUITE_NAME=$(cat <"$DEV1_SUITES_PATH/.current.suite.name")
+  fi
+fi
+if [[ "$suiteName" != "" ]]; then
+  echo "$suiteName" > "$DEV1_SUITES_PATH/.current.suite.name"
+fi
+DEV1_SUITE_PATH="$DEV1_SUITES_PATH/$suiteName"
+ 
+# ---------------- TASKS ------------------------------------------------
+
+DEV1_TASKS_PATH="$DEV1_SUITES_PATH"/"$DEV1_SUITE_NAME/tasks"
+cd "$DEV1_TASKS_PATH" || RETURN_OR_EXIT
+searchPath="$DEV1_TASKS_PATH/"
+taskName=""
+
+if  [[ "$1" != "" && "$1" != "--" ]]; then
+  mapfile -t foundExactTask< <(find  "$searchPath"\
+    -maxdepth 1 -name "$1" -printf "%f\n")
+  mapfile -t foundWildcardTask < <(find "$searchPath" \
+    -maxdepth 1 -regex ".*$1.*" -printf "%f\n")
+                                if [[ $DEV1_DEBUG != "" ]]; then
+                                DumpVars foundExactTask foundWildcardTask
+                                fi
+  if [[ ${foundExactTask[0]} == "" && "${#foundWildcardTask[@]}" == "0" ]]; then
+    taskName=""
+  elif [[ ${foundExactTask[0]} != "" ]]; then
+    taskName=$(basename "${foundExactTask[0]}")
+  elif [[ "${#foundWildcardTask[@]}" == "1" ]]; then
+    taskName=$(basename "${foundWildcardTask[0]}")
+  echo ${#foundWildcardTask[@]}
+  else
+    echo ""
+    echo " $1 matched more than one task.  Please choose one by number:"
+    echo ""
+    for (( i=0; i<${#foundWildcardTask[@]}; i++ )); do
+        j=$(( i+1 ))
+        echo "$j ${foundWildcardTask[i]}"
+    done
+    unset choice
+    read -rp "choice: " choice
+    choice=$(( choice++ ))
+    taskName="${foundWildcardTask[$choice]}"
+  fi
+fi
+if [[ "$taskName" != "" ]]; then
+  DEV1_TASK_NAME="$taskName"
+  DEV1_TASK_PATH="$DEV1_TASKS_PATH/$taskName" 
+  (( shifts++ ))
+  shift
+else
+  if [[ -e $DEV1_SUITES_PATH/current.suite.name ]]; then
+    DEV1_SUITE_NAME=$(cat <"$DEV1_SUITES_PATH/project/current.suite.name")
+  fi
+fi
+
+if [[ "$DEV1_TASK_NAME" == "" ]]; then
+  DEV1_TASK_NAME=$(cat <"$DEV1_TASKS_PATH/current.task.name")
+  DEV1_TASK_PATH="$DEV1_TASKS_PATH"/"$DEV1_TASK_NAME"
+fi
+# ------------------------- code workspace --------------------
+DEV1_TASK_PATH="$DEV1_SUITES_PATH/$DEV1_SUITE_NAME/tasks/$DEV1_TASK_NAME"
+cd "$DEV1_TASK_PATH" || RETURN_OR_EXIT
+searchPath="$DEV1_TASK_PATH"
+codeWorkspaceName=""
+
+if  [[ "$1" != "" && "$1" != "--" ]]; then
+  mapfile -t foundExactCodeWorkspace< <(find "$searchPath"\
+    -maxdepth 1 -name "$1.code-workspace" -printf "h/%f\n")
+  mapfile -t foundWildcardCodeWorkspace < <(find "$searchPath" \
+    -maxdepth 1 -regex ".*$1.*[.]code-workspace" -printf "%h/%f\n")
+
+  if [[ ${foundExactCodeWorkspace[0]} == "" ]]; then
+    codeWorkspaceName=""
+  elif [[ ${foundExactCodeWorkspace[0]} != "" ]]; then
+    codeWorkspaceName=$(basename "${foundExactCodeWorkspace[0]}")
+  elif [[ "${#foundWildcardCodeWorkspace[@]}" == "1" ]]; then
+    codeWorkspaceName=$(basename "${foundWildcardCodeWorkspace[0]}")
+
+  else
+    echo ""
+    echo " $1 matched more than one .code-worspace file.  Please choose one by number:"
+    echo ""
+    for (( i=0; i<${#foundWildcardCodeWorkspace[@]}; i++ )); do
+        j=$(( i+1 ))
+        echo "$j ${foundWildcardCodeWorkspace[i]}"
+    done
+    unset choice
+    read -rp "choice: " choice
+    choice=$(( choice - 1 ))
+    echo "choice: $choice"
+    codeWorkspaceName="${foundWildcardCodeWorkspace[$choice]}"
+  fi
+fi
+
+if [[ "$codeWorkspaceName" != "" ]]; then
+  DEV1_CODE_WORKSPACE_PATH="$codeWorkspaceName"
+  (( shifts++ ))
+  shift
+else
+  if [[ -e $DEV1_SUITES_PATH/project/current.codeWorkspace.name ]]; then
+    DEV1_CODE_WORKSPACE_PATH=$(cat <DEV1_SUITES_PATH/project/current.codeWorkspace.name)
   fi
 fi
 
 
+# ----------------------------   Options and Parameters Matching ---------------------------------------
+#find ${1}.build.variant
+#find ${1}.build.options
+#find ${1}.build.parameters
+#find ${1}.run.Options
+#find ${1}.run.parameters
 
-if [[ "$PWD" == "${DEV1_SUITES_PATH}" ]]; then atSuites=1; fi
-if [[ "$PWD" =~ ${DEV1_SUITES_PATH}/ ]]; then inSuites=1; fi
+# defaults:
+# debug.build.variant
 
-if [[ "${argTask}" != "" ]]; then haveTask=1; fi
-if [[ "${argWorkspace}" != "" ]]; then haveWorkspace=1; fi
+# $taskName.build.options if present
+# $suiteName.build.options if present
+# otherwise none
+#
+# same for build.parameters, run.options and run.parameters
 
-if [[ $haveSuite == 0 ]]; then echo Have Suite; fi
-if [[ $haveTask == 0 ]]; then echo Have Task; fi
-if [[ $haveWorkspace == 0 ]]; then echo Have haveWorkspace; fi
+# you could have different ids for all four
+# the resulting four variables contain a path to the relevant file
+buildVariant=""
+buildOptions=""
+buildParameters=""
+runOptions=""
+runParameters=""
 
-atSuites=1; inSuites=1; atTasks=1; inTasks=1; atTask=1; inTasks=1;
+optionPaths=("$DEV1_TASK_PATH" "$DEV1_SUITE_PATH/project" )
 
-if [[ $inSuites && "$PWD" =~ "/tasks$" ]]; then atTasks=1; fi
-if [[ $inSuites && "$PWD" =~ "/tasks/" ]]; then inTasks=1; fi
-if [[ $inTasks && "$PWD" =~ /tasks/[:alnum:_]*$ ]]; then atTask=1; fi
-if [[ $inTasks && "$PWD" =~ /tasks/[:alnum:_]*/ ]]; then inTask=1; fi
+# use patterns for exact match
+# $1.build.variant
+# $1.build.options
+# $1.build.parameters
+# $1.run.options
+# $1.run.parameters
+# $1uild.options
+# $1uild.parameters
+# $1un.options
+# $1un.parameters
+# $1.variant
+# $1.options
+# $1.parameters
+exactMatchPatterns=(  "[.]build[.]variant" \
+                      "[.]build[.]options" "[.]build[.]parameters" \
+                      "[.]run[.]options" "[.]run[.]parameters" \
+                      "uild[.]options" "uild[.]parameters" \
+                      "un[.]options" "un[.]parameters" \
+                      "[.]variant" \
+                      "[.]options" "[.]parameters" \
+                      "$")
 
-if [[ $atSuites == 1 ]]; then echo $atSuites At suites; fi
-if [[ $inSuites == 1 ]]; then echo In suites; fi
-if [[ $atTasks == 1 ]]; then echo At Tasks; fi
-if [[ $inTasks == 1 ]]; then echo In Tasks; fi
-if [[ $atTask == 1 ]]; then echo At Task; fi
-if [[ $inTask == 1 ]]; then echo In Task; fi
+while  [[ "$1" != "" && "$1" != "--" ]]; do
+  for  optionPath in "${optionPaths[@]}"; do
+    for  exactMatchPattern in "${exactMatchPatterns[@]}"; do
+      exactMatchPattern="$1$exactMatchPattern"
+      mapfile -t matches < <(find "$optionPath/" -maxdepth 1 -regex "$exactMatchPattern" -printf "%f" )
+      for match in ${matches[0]}; do
+          if [[ "$buildVariant"  == "" && $match =~ [.]*[.]build[.]variant    ]]; then
+          buildVariant=$match
+        fi
+        if [[ "$buildOptions"    == "" && $match =~ [.]*[.]build[.]options    ]]; then
+          buildOptions=$match
+        fi
+        if [[ "$buildParameters" == "" && $match =~ [.]*[.]build[.]parameters ]]; then
+          buildParameters=$match
+        fi
+        if [[ "$runVariant"      == "" && $match =~ [.]*[.]run[.]variant      ]]; then
+          runVariant=$match
+        fi
+        if [[ "$runOptions"      == "" && $match =~ [.]*[.]run[.]options      ]]; then
+          runOptions=$match
+        fi
+        if [[ "$runParameters"   == "" && $match =~ [.]run[.]parameters       ]]; then
+          runParameters=$match
+        fi
+      done
+    done
+  done
+  (( shifts++ ))
+  shift
+done
 
-# any operation should work if we are already there and give no additional context info
-# $DEV1_SUITES_PATH/<suite-name>/tasks/<task-name>
+optionPaths=( "$DEV1_TASK_PATH" "$DEV1_SUITE_PATH/project" "$DEV1_TEMPLATES_PATH" )
+#fill in with defaults if not yet found
+for  optionPath in "${optionPaths[@]}"; do
 
-if (( ! (have1 || have2 || have3) & atTask )); then
+  optionPathBuildVariant=$optionPath/default.build.variant
+  optionPathBuildOptions=$optionPath/default.build.options
+  optionPathBuildParameters=$optionPath/default.build.parameters
+  optionPathRunVariant=$optionPath/default.run.variant
+  optionPathRunOptions=$optionPath/default.run.options
+  optionPathRunParameters=$optionPath/default.run.parameters
 
-  scanPathSuite=$(pwd)
-  scanPathTask=${scanPathSuite#${DEV1_SUITES_PATH}/}
-  scanPathSuite=${scanPathTask%%/*}
-  scanPathTask=${scanPathTask#${scanPathSuite}/[a-zA-Z_]*s/}
-  scanPathTask=${scanPathTask%%/*}
-  ShowVariables scanPathSuite scanPathTask
-  
-    export DEV1_CURRENT_SUITE_NAME=$scanPathSuite
-    export DEV1_CURRENT_TASK=$scanPathTask
-    export currentSuite=$scanPathSuite
-    export currentTask=$scanPathTask
+  if [[ "$buildVariant"     == "" && -e "$optionPathBuildVariant" ]]; then
+    buildVariant=$optionPathBuildVariant
+  fi
+  if [[ "$buildOptions"    == "" && -e "$optionPathBuildOptions" ]]; then
+    buildOptions=$optionPathBuildOptions
+  fi
+  if [[ "$buildParameters" == "" && -e "$optionPathBuildParameters" ]]; then
+    buildParameters=$optionPathBuildParameters
 
-    cd $DEV1_SUITES_PATH/${scanPathSuite}/tasks/${scanPathTask} \
-      || ${RETURN_OR_EXIT}
+  fi
+  if [[ "$runVariant"      == "" && -e "$optionPathRunVariant" ]]; then
+    runVariant=$optionPathRunVariant
+  fi
+  if [[ "$runOptions"      == "" && -e "$optionPathRunOptions" ]]; then
+    runOptions=$optionPathRunOptions
+  fi
+  if [[ "$runParameters"     == "" && -e "$optionPathRunParameters" ]]; then
+    runParameters=$optionPathRunParameters
+  fi
+done
 
- ${RETURN_OR_EXIT}
-fi
- ${RETURN_OR_EXIT}
 
-if [[ "${currentWorkspace}" == "" && "${currentTask}" == "$DEV1_CURRENT_TASK" && "${currentSuite}" == "$DEV1_CURRENT_SUITE_NAME" ]]; then
-  CodeWorkspaceName=$DEV1_CURRENT_PROJECT
-fi
-if [[ "${currentTask}" == "" &&  "${currentSuite}" == "$DEV1_CURRENT_SUITE_NAME" ]]; then
-  currentTask=$DEV1_CURRENT_TASK
-fi
-if [[ "${currentSuite}" == "" ]]; then
-  currentSuite=$DEV1_CURRENT_SUITE_NAME
-fi
+
+export DEV1_SUITE_NAME
+export DEV1_SUITE_PATH
+export DEV1_TASK_NAME
+export DEV1_BUILD_VARIANT_PATH=$buildVariant
+DEV1_BUILD_VARIANT_NAME=$(cat "$buildVariant")
+export DEV1_BUILD_VARIANT_NAME
+export DEV1_BUILD_OPTIONS_PATH=$buildOptions
+export DEV1_BUILD_PARAMETERS_PATH=$buildParameters
+export DEV1_RUN_VARIANT_PATH=$runVariant
+export DEV1_RUN_OPTIONS_PATH=$runOptions
+export DEV1_RUN_PARAMETERS_PATH=$runParameters
+export DEV1_CODE_WORKSPACE_PATH
+export DEV1_BUILDS_PATH="$DEV1_SUITE_PATH/builds"
+export DEV1_BUILD_PATH=$DEV1_BUILDS_PATH/$DEV1_TASK_NAME/$DEV1_BUILD_VARIANT_NAME
+export DEV1_PROJECT_PATH="$DEV1_SUITE_PATH/project"
+export DEV1_TASK_PATH
+export shifts
+
+DEV1_EXPORTS=( \
+          DEV1_SUITE_NAME DEV1_SUITE_PATH \
+          DEV1_TASK_NAME DEV1_TASK_PATH \
+          DEV1_CODE_WORKSPACE_PATH \
+          DEV1_BUILD_VARIANT_PATH \
+          DEV1_BUILD_OPTIONS_PATH DEV1_BUILD_PARAMETERS_PATH\
+          DEV1_RUN_VARIANT_PATH \
+          DEV1_RUN_OPTIONS_PATH DEV1_RUN_PARAMETERS_PATH \
+          DEV1_PROJECT_PATH )
+
+                                if [[ $DEV1_DEBUG != "" ]]; then
+                                DumpVars  "${DEV1_EXPORTS[@]}"
+                                fi
+export    "${DEV1_EXPORTS[@]}"
+#echo "--------------------- Context Complete ---------------------"
+
+$RETURN_OR_EXIT 

@@ -16,12 +16,10 @@ if [[ ! "$DEV1_DEBUG" == "" ]]; then
   echo "starting $DEV1/commands/ide $*"
   set -x
 fi
-# shellcheck source="$DEV1_COMMANDS_PATH/context"
-source "$DEV1_COMMANDS_PATH/context" "ide" "$1" "$2" "$3"
+
+source "$DEV1_COMMANDS_PATH/context"  "$1" "$2" "$3"
 if [[ "$?" == "1" ]]; then 
-  if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then exit ${returnCode}; 
-  else  ${RETURN_OR_EXIT}
-  fi
+${RETURN_OR_EXIT}
 fi
 if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
   while [[ ! "$1" == "--" ]]; do
@@ -29,24 +27,21 @@ if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
   done
   shift    # shift the --
 fi
-if [[ "${currentTask}" == "" \
-   && -e ${DEV1_SUITES_PATH}/${currentSuite}/repositories/${currentSuite} ]]; then
-   cd "${DEV1_SUITES_PATH}/${currentSuite}/repositories/${currentSuite}" \
-   ||  ${RETURN_OR_EXIT}
+if [[ "${DEV1_TASK_NAME}" == "" \
+   && -e ${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME} ]]; then
+   cd "${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME}" \
+   ||  $RETURN_OR_EXIT
 fi
-echo "$(basename ${BASH_SOURCE[0]}) " "$*"
-echo "cd $(pwd)"
-if [[ -e ${currentTask}.code-workspace ]]; then
-  echo "code ${currentTask}.code-workspace"
-  code "${currentTask}.code-workspace"
-elif [[ -e ${currentSuite}.code-workspace ]]; then 
-  echo "code ${currentSuite}.code-workspace"
-  code "${currentSuite}.code-workspace"
+echo "${BASH_SOURCE[0]} $*"
+LogAction cd "$DEV1_TASK_PATH"
+cd "$DEV1_TASK_PATH" || ( echo Task Path not found && $RETURN_OR_EXIT_)
+if [[ -e ${DEV1_TASK_NAME}.code-workspace ]]; then
+  workspace="${DEV1_TASK_NAME}.code-workspace"
+elif [[ -e ${DEV1_SUITE_NAME}.code-workspace ]]; then
+  workspace="${DEV1_SUITE_NAME}.code-workspace"
 else
-  echo "code ."
-  code .
+  workspace="."
 fi
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "ending   $DEV1/commands/run $*"
-  set +x
-fi
+LogAction code "$workspace"
+code "$workspace"
+PrintActionLog

@@ -1,0 +1,6 @@
+#!/bin/bash
+# TODO impmelement commands/task
+source "$DEV1_COMMANDS_PATH/context" "$@"
+if [[ "$DEV1_TASK_PATH" != "" ]]; then 
+  cd  "$DEV1_TASK_PATH" || echo error could not cd to "$DEV1_TASK_PATH"
+fi

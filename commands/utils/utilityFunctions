@@ -3,6 +3,7 @@ declare -g _debug=0
 
 function GetJsonString()
 {
+  local -; set +x
   local json="$2"
   local jqueryExpression="$3"
   #echo "mapfile -t ${1} < <(echo $json | jq -r $jqueryExpression)"
@@ -11,16 +12,18 @@ function GetJsonString()
 }
 function GetJsonArray()
 {
+  local -; set +x
   local json="$2"
   local jqueryExpression="$3"
-  echo "mapfile -t \"${1}\" < <(echo \"$json\" | jq -c \"$jqueryExpression\")"
+  #echo "mapfile -t \"${1}\" < <(echo \"$json\" | jq -c \"$jqueryExpression\")"
   mapfile -t "${1}" < <(echo "$json" | jq -c "$jqueryExpression")
   return 0
 }
 function ShowJson()
 {
+  local -; set +x
   while [[ "$1" != "" ]] ; do
-    echo "$1:"     
+    echo "$1:" 
     echo "$1" | ${!1} jq '.'
     shift
   done
@@ -89,18 +92,20 @@ while IFS='=' read -r -d '' n v; do
 done < <(env -0)
 }
 if [[ "$DEV1_DEBUG" != "" ]]; then _debug_on=1; fi
+
 declare -Ag actionLog
+
 function LogAction(){
 
 local -; set +x
-  d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
-  while [[ ${actionLog["$d"]} != "" ]]; do
-    d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
+  local _d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
+  while [[ ${actionLog["$_d"]} != "" ]]; do
+    _d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
   done 
-  actionLog["$d"]="$*"
+  actionLog["$_d"]="$*"
   # shellcheck disable=SC2086
-  echo ${actionLog["$d"]}
+  echo ${actionLog["$_d"]}
 }
 function PrintActionLog(){
- ( local -; set +x;  for x in "${!actionLog[@]}"; do printf "\n%s: %s\n" "$x" "${actionLog[$x]}"; done )
+ ( local -; set +x;  for x in "${!actionLog[@]}"; do printf "%s: %s\n" "$x" "${actionLog[$x]}"; done |sort )
 }

@@ -32,20 +32,44 @@ alias suites="cd $(pwd)/..; ls ./"
 # shellcheck disable=2142
 
 #TODO: use bash functions for these instead of aliases
-
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias new="f(){ source $(pwd)/commands/new \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias context="f(){ source $(pwd)/commands/context \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias project="f(){ source $(pwd)/commands/project \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias ide="f(){ source $(pwd)/commands/ide \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias build="f(){ source $(pwd)/commands/build \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias run="f(){ source $(pwd)/commands/run \$@;unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias debug="f(){ source $(pwd)/commands/run \$@ debug ; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias suite="f(){ source $(pwd)/commands/suite \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias status="f(){ source $(pwd)/commands/status \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias maint="f(){ source $(pwd)/commands/maint \$@; unset -f f; }; f"
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias dev1rc="source $(pwd)/dev1rc"
 
 function copy_alias(){
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
+# shellcheck disable=SC2086
 alias $2="$(alias $1 |sed -e s/.*=// -e s/\'//g )"
 
 }
@@ -57,6 +81,8 @@ copy_alias build b
 copy_alias run r
 copy_alias debug g
 
+# shellcheck disable=SC2142
+# shellcheck disable=SC2139
 alias suites="cd ${DEV1_SUITES_PATH} || return 1; ls -1"
 
 cd "$restore_dir" || return 1

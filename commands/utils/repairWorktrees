@@ -1,0 +1,28 @@
+#!/bin/bash
+source $DEV1_SUITES_PATH/dev1/tasks/next/dev1/commands/context $1 
+
+
+cd $repositories
+for repo in *.git; do 
+echo 
+  echo "$repo"
+  echo 
+  cd "$repo"
+  git worktree list
+  for tree in $(git worktree list|sed -e 's/ .*//' -e 's/.*[.]git$//'); do
+    git worktree repair $tree
+  done
+  for tree in $(git worktree list|grep prunable|sed -e 's/ .*//' -e 's/.*[.]git$//'); do
+  echo "git worktree remove $tree"
+  git worktree remove $tree
+  done
+  cd "$repositories"
+done
+
+# cd "$worktrees"
+# for worktree_git in "$(find ./ -name .git)"; do
+#   echo " "
+#   echo "$worktree_git"
+#   echo " "
+#   cat $worktree_git
+# done

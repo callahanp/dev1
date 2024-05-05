@@ -1,24 +1,30 @@
 #!/bin/bash
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/build $*"
-  set -x
+# if [[ ! "$DEV1_DEBUG" == "" ]]; then
+#   echo "starting $DEV1/commands/build $*"
+#   set -x
+# fi
+
+# echo "cd $(pwd)"
+# echo "${BASH_SOURCE[0]})" "$@"
+source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+
+if [[ "$1" != "" ]]; then
+  source "$DEV1_COMMANDS_PATH/context" "$1" "$2" "$3"
+fi
+if [[ "$?" == "1" ]]; then 
+echo "DEV1 Error: Unable to resolve context"; return 1; fi
+
+
+if [[ "$DEV1_SUITE_PATH" == "$DEV1_SUITES_PATH/$1" ]]; then
+  shift
+fi
+if [[ "$DEV1_TASK_PATH" == "$DEV1_SUITE_PATH/tasks/$1" ]]; then
+  shift
+fi
+if [[ "${DEV1_VARIANT_NAME,,}" == "${1,,}" ]]; then
+  shift
 fi
 
-echo "cd $(pwd)"
-echo "${BASH_SOURCE[0]})" "$@"
-
-source "$DEV1_COMMANDS_PATH/context" "$1" "$2" 
-
-if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
-echo $shifts
-for (( i=0; i<shifts; i++ )); do
-  shift  # shift options before the --
-done
-if [[ "$1" == '--' ]]; then
-  shift    # shift the --
-fi
-
-cd "$DEV1_TASK_PATH" || ( echo "error - " "$DEV1_TASK_PATH" " not found";  $RETURN_OR_EXIT; ) 
 build1="$DEV1_TASK_PATH/build.bash"
 build2="$DEV1_SUITE_PATH/project/build.bash"
 
@@ -27,29 +33,23 @@ if [[ -e "$build1" ]]; then
 elif [[ -e "$build2" ]]; then
   buildScript="$build2"
 else
-  echo "Could not fine build.bash in either of"
+  echo "Could not find build.bash in either of"
   echo "    $build1"
   echo " or $build2"
   echo "you need to provide one"
   RETURN_OR_EXIT
 fi
-DumpVars DEV1_BUILD_VARIANT_PATH \
-          DEV1_BUILD_OPTIONS_PATH \
-          DEV1_BUILD_PARAMETERS_PATH \
-          buildScript
-variant=$(cat "$DEV1_BUILD_VARIANT_PATH")
-options=$(cat "$DEV1_BUILD_OPTIONS_PATH")
-parameters=$(cat "$DEV1_BUILD_PARAMETERS_PATH")
+
 suite=$DEV1_SUITE_NAME
 ref=$DEV1_TASK_NAME
 # shellcheck disable=SC1090
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-LogAction source $buildScript $suite $ref $variant $options $@ $parameters
+LogAction source $buildScript "$@"
 # shellcheck disable=SC1090
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-source $buildScript $suite $ref $variant $options $@ $parameters
+source $buildScript "$@"
 PrintActionLog
 
 

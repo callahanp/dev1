@@ -7,17 +7,11 @@ fi
 
 echo "cd $(pwd)"
 echo "${BASH_SOURCE[0]})" "$@"
+source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
 
-source "$DEV1_COMMANDS_PATH/context" "$1" "$2" 
+source "$DEV1_COMMANDS_PATH/context" "$@"
 
 if [[ "$?" == "1" ]]; then echo "DEV1 Error: Unable to resolve context"; return 1; fi
-
-for (( i=0; i<shifts; i++ )); do
-  shift  # shift options before the --
-done
-if [[ "$1" == '--' ]]; then
-  shift    # shift the --
-fi
 
 run1="$DEV1_TASK_PATH/run.bash"
 run2="$DEV1_SUITE_PATH/project/run.bash"
@@ -40,6 +34,6 @@ runOptions=$(cat "$DEV1_RUN_OPTIONS_PATH")
 runParameters=$(cat "$DEV1_RUN_PARAMETERS_PATH")
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-LogAction  $runScript  "$suite" "$ref" "$variant" "$runOptions" "$@"
-$runScript  "$suite" "$ref" "$variant" "$runOptions" "$@"
+LogAction   "$@"
+$runScript  "$@"
 PrintActionLog

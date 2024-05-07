@@ -27,13 +27,9 @@ else
   echo "you need to provide one"
   RETURN_OR_EXIT
 fi
-suite=$DEV1_SUITE_NAME
-ref=$DEV1_TASK_NAME
-variant=$DEV1_BUILD_VARIANT_NAME
-runOptions=$(cat "$DEV1_RUN_OPTIONS_PATH")
-runParameters=$(cat "$DEV1_RUN_PARAMETERS_PATH")
+
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-LogAction   "$@"
-$runScript  "$@"
+LogAction $runScript "$@"
+source $runScript  "$@"
 PrintActionLog

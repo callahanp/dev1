@@ -41,7 +41,6 @@ function resolveSuite(){
     echo ""
     for (( i=0; i<${#foundWildcardSuite[@]}; i++ )); do
       (( i++ ))
-      echo "$j ${foundWildcardSuite[i]}"
     done
     unset choice
     read -rp "choice: " choice
@@ -68,7 +67,7 @@ function resolveSuite(){
   return 0
 }
 function resolveTask(){
-  echo "resolveTask $1"
+
   tasksPath="$suitePath/tasks"
   searchPath="$tasksPath/"
   taskName=""
@@ -82,7 +81,6 @@ function resolveTask(){
     taskName=$(basename "${foundExactTask[0]}")
   elif [[ "${#foundWildcardTask[@]}" == "1" ]]; then
     taskName=$(basename "${foundWildcardTask[0]}")
-  echo ${#foundWildcardTask[@]}
   else
     echo ""
     echo " $1 matched more than one task.  Please choose one by number:"
@@ -96,24 +94,24 @@ function resolveTask(){
     choice=$(( choice++ ))
     taskName="${foundWildcardTask[$choice]}"
   fi
-  if [[ "$taskName" == "" ]]; then
-  taskName=$(cat <"$tasksPath/current.task.name")
+  if [[ "$taskName" == "" && -e "$tasksPath/current.task.name" ]]; then
+    taskName=$(cat <"$tasksPath/current.task.name")
   fi
-  echo "$taskName" > "$tasksPath/current.task.name"
-  resolvedContext['taskName']="$taskName"
-  resolvedContext['taskPath']="$tasksPath/$taskName"
-
+  if [[ "$taskName" != "" ]]; then
+    echo "$taskName" > "$tasksPath/current.task.name"
+    resolvedContext['taskName']="$taskName"
+    resolvedContext['taskPath']="$tasksPath/$taskName"
+  fi
   unset foundWildcardTask
   unset foundExactTask
 }
 function resolveCodeWorkspace(){
-  echo "resolveCodeWorkspace $1"
 searchPath="$taskPath"
 codeWorkspaceName=""
 
 declare -a codeWorkspaceFiles
 readarray -d '' codeWorkspaceFiles < <(find "$searchPath" -name '*.code-workspace' -print0)
-echo $searchPath "${codeWorkspaceFiles[@]}"
+
 if [[ "${#codeWorkspaceFiles[@]}" == 1 ]]; then
   codeWorkspaceName=$(basename "${codeWorkspaceFiles[0]}")
 else
@@ -154,12 +152,10 @@ else
 }
 
 function resolveVariant(){
-  echo "resolveVariant $1"
 
   variants=("Release" "Debug" "RelWithDebInfo" "MinSizeRel")
   # shellcheck disable=SC2206
   lowerCaseVariants=(${variants[@],,})
-  echo  "\${#variants[@]} ${#variants[@]}"
   v=$1; v=${v,,}
   if [[ "$v" != "" ]]; then
     for (( iv=0; iv<${#variants[@]}; iv++ )); do
@@ -186,7 +182,6 @@ resolvedContext['variant']=""
 declare -a inputs
 inputs=("$@")
 for (( ii=0; ii<${#inputs[@]}; ii++ )); do
-  echo "${inputs[$ii]}"
   if [[ "${inputs[$ii]}" == "--" ]]; then
     (( ii=${#inputs[@]} ))
   fi
@@ -233,15 +228,7 @@ export builds=$DEV1_BUILDS_PATH
 export runs=$DEV1_RUNS_PATH
 export task=$DEV1_TASK_PATH
 export project=$DEV1_PROJECT_PATH
-DEV1_EXPORTS=( \
-          DEV1_SUITE_NAME DEV1_SUITE_PATH \
-          DEV1_WORKTREES_PATH DEV1_REPOSITORIES_PATH DEV1_RUNS_PATH
-          DEV1_TASK_NAME DEV1_TASK_PATH \
-          DEV1_BUILD_OPTIONS_PATH DEV1_BUILD_PARAMETERS_PATH\
-          DEV1_RUN_OPTIONS_PATH DEV1_RUN_PARAMETERS_PATH \
-          DEV1_PROJECT_PATH \
-          repositories worktrees builds runs project)
 
-#echo "--------------------- Context Complete ---------------------"
-echo $DEV1_SUITE_NAME $DEV1_TASK_NAME $DEV1_CODE_WORKSPACE_NAME $DEV_VARIANT_NAME
+
+echo "--------------------- Context Complete ---------------------"
 

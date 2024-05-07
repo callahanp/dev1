@@ -14,14 +14,16 @@ function is_in_local() {
         return 1
     fi
 }
-worktrees="" 
+worktrees=""
 source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
 
 # shellcheck disable=SC2154
 if [[ "$1" != "" ]]; then
   configFile=$(realpath "$1")
-elif [[ "$suiteName" != "" ]]; then
-  configFile="$DEV1_SUITE_PATH/$suiteName/project/${suiteName}.config.json"
+elif [[ "$DEV1_SUITE_NAME" != "" ]]; then
+  suitePath=$DEV1_SUITE_PATH
+  suiteName=$DEV1_SUITE_NAME
+  configFile="${suitePath}/project/${suiteName}.config.json"
 fi
 if [[ "$configFile" != "" && ! -e $configFile ]]; then
   echo "unable to find $configFile"

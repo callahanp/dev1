@@ -62,14 +62,16 @@ function resolveSuite(){
     resolvedContext['suiteName']="$suiteName"
     resolvedContext['suitePath']="$suitesPath/$suiteName"
   fi
+  ls 
   unset foundWildcardSuite
   unset foundExactSuite
   return 0
 }
 function resolveTask(){
-
+set -x
   tasksPath="$suitePath/tasks"
   searchPath="$tasksPath/"
+  echo $searchPath
   taskName=""
   mapfile -t foundExactTask< <(find  "$searchPath"\
     -maxdepth 1 -name "$1" -printf "%f\n")
@@ -104,6 +106,7 @@ function resolveTask(){
   fi
   unset foundWildcardTask
   unset foundExactTask
+  set +x
 }
 function resolveCodeWorkspace(){
 searchPath="$taskPath"
@@ -204,6 +207,8 @@ for (( ii=0; ii<${#inputs[@]}; ii++ )); do
 
 done
 resolvedContext['buildPath']="${resolvedContext['suitePath']}"/builds/${resolvedContext['taskName']}"/${resolvedContext['variant']}"
+
+echo "resolvedContext['buildPath'] ${resolvedContext['buildPath']}"
 export resolvedContext
 
 export DEV1_SUITE_NAME="${resolvedContext['suiteName']}"

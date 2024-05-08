@@ -13,8 +13,9 @@ if [[ "$1" != "" ]]; then
 fi
 if [[ "$?" == "1" ]]; then 
 echo "DEV1 Error: Unable to resolve context"; return 1; fi
-
-
+echo "$0"
+DumpVars $DEV1_SUITE_NAME $1 $DEV1_TASK_NAME $2 $DEV1_VARIANT $3
+echo "\$@:" "$@"
 if [[ "$DEV1_SUITE_PATH" == "$DEV1_SUITES_PATH/$1" ]]; then
   shift
 fi

@@ -252,9 +252,9 @@ for ((it=0; it<${#tasksArray[@]}; it += 1)); do
 # .config.tasks[$it].taskName
 declare -g _taskName
 GetJsonString  _taskName          "$config" ".config.tasks[$it].taskName"
-
-  echo "tasksArray: $it - ${tasksArray[$it]}"
-
+ taskPath=$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}
+  mkdir -p  $taskPath
+ 
 # .config.tasks[$it].variants[]
 # .config.tasks[$it].variants[$ib]
 

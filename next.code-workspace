@@ -1,12 +1,1 @@
-{
-	"folders": [
-		{ "path": "/work/suites/dev1/worktrees/next/dev1" },
-		{ "path":"."}
-	],
-	"settings": {
-		"cmake.configureSettings": {},
-		"files.exclude": {
-			"**/.git": false
-		}
-	}
-}
+/work/suites/dev1/project/next.code-workspace

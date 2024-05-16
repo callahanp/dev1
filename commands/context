@@ -3,22 +3,23 @@
 # dev1
 # Dev1's operations, ide, build and run depend on
 # the settings for suite, task, code_workspace and variant
-# Together, these four determine the values for a number of 
-# environment variables set at the end of 
+# Together, these four determine the values for a number of
+# environment variables set at the end of
 #
 # ide requires suite, task & code-workspace names
 # build requires suite, task, variant, build options/parameters
 # run requires suite, task, variant, run options/parameters.
 #
 
-# Values for suite, task, code-workspace and variant are determined 
+# Values for suite, task, code-workspace and variant are determined
 # from
 # - parameters given to commands
-# - saved environment variable values 
+# - saved environment variable values
 
 
 # shellcheck disable=SC1091
-suitesPath=$DEV1_SUITES_PATH
+# shellcheck disable=SC2153
+suitesPath=$DEV1_SUITES_PATH # provided by .bashrc
 function resolveSuite(){
   suiteName=""
   mapfile -t foundExactSuite\
@@ -62,7 +63,6 @@ function resolveSuite(){
     resolvedContext['suiteName']="$suiteName"
     resolvedContext['suitePath']="$suitesPath/$suiteName"
   fi
-  ls 
   unset foundWildcardSuite
   unset foundExactSuite
   return 0
@@ -71,7 +71,6 @@ function resolveTask(){
 set -x
   tasksPath="$suitePath/tasks"
   searchPath="$tasksPath/"
-  echo $searchPath
   taskName=""
   mapfile -t foundExactTask< <(find  "$searchPath"\
     -maxdepth 1 -name "$1" -printf "%f\n")
@@ -172,7 +171,6 @@ function resolveVariant(){
 #echo "--------------------- Starting Context ---------------------"
 if [[ "$DEV1_DEBUG" != "" ]]; then
   echo "starting $DEV1_COMMANDS_PATH/context " "$@"
-  set -x
 fi
 
 declare -Ag resolvedContext
@@ -187,24 +185,24 @@ inputs=("$@")
 for (( ii=0; ii<${#inputs[@]}; ii++ )); do
   if [[ "${inputs[$ii]}" == "--" ]]; then
     (( ii=${#inputs[@]} ))
-  fi
+  else
     if [[ "${resolvedContext['taskName']}" != "" \
         && "${resolvedContext['variant']}" == "" ]]; then
-    resolveVariant "${inputs[$ii]}"
+      resolveVariant "${inputs[$ii]}"
+    fi
+    if [[ "${resolvedContext['suiteName']}" == "" ]]; then
+      resolveSuite "${inputs[$ii]}"
+      if [[ "$?" == "1" ]]; then return 1; fi
+      suitePath="${resolvedContext['suitePath']}"
+    elif [[ "${resolvedContext['taskName']}" == "" ]]; then
+      resolveTask "${inputs[$ii]}"
+      if [[ "$?" == "1" ]]; then return 1; fi
+      taskPath="${resolvedContext['taskPath']}"
+    elif [[ "${resolvedContext['code-workspace']}" == "" ]]; then
+      resolveCodeWorkspace "${inputs[$ii]}"
+      if [[ "$?" == "1" ]]; then return 1; fi
+    fi
   fi
-  if [[ "${resolvedContext['suiteName']}" == "" ]]; then
-    resolveSuite "${inputs[$ii]}"
-    if [[ "$?" == "1" ]]; then return 1; fi
-    suitePath="${resolvedContext['suitePath']}"
-  elif [[ "${resolvedContext['taskName']}" == "" ]]; then
-    resolveTask "${inputs[$ii]}"
-    if [[ "$?" == "1" ]]; then return 1; fi
-    taskPath="${resolvedContext['taskPath']}"
-  elif [[ "${resolvedContext['code-workspace']}" == "" ]]; then
-    resolveCodeWorkspace "${inputs[$ii]}"
-    if [[ "$?" == "1" ]]; then return 1; fi
-  fi
-
 done
 resolvedContext['buildPath']="${resolvedContext['suitePath']}"/builds/${resolvedContext['taskName']}"/${resolvedContext['variant']}"
 

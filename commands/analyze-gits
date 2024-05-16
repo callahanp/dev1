@@ -1,0 +1,7 @@
+#!/bin/bash
+git branch -av
+git show --oneline --no-patch
+git remote -vv
+git show-ref  -- next
+git show-ref  -- tickets/2887
+

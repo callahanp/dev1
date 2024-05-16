@@ -14,6 +14,26 @@ function is_in_local() {
         return 1
     fi
 }
+function write_code_workspace_file
+{
+ echo "writing ${codeWorkspaceFilePath}"
+  cat <<EOD  >"${codeWorkspaceFilePath}"
+  {
+    "folders": [
+      { "path": "../../project"},
+EOD
+  # write a workspace root for each included worktree
+  for (( ir=0; ir<${#workspaceRoots[@]}; ir++ ))do
+          echo "   { \"path\": \"${workspaceRoots[$ir]}\"}," >>"${codeWorkspaceFilePath}"
+  done
+    # write end of code-workspace file
+  cat <<EOD  >>"${codeWorkspaceFilePath}"
+      {"path": "." },
+      {"path": "./.vscode"}
+    ]
+  }
+EOD
+}
 worktrees=""
 source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
 
@@ -27,7 +47,7 @@ elif [[ "$DEV1_SUITE_NAME" != "" ]]; then
 fi
 if [[ "$configFile" != "" && ! -e $configFile ]]; then
   echo "unable to find $configFile"
-  $RETURN_OR_EXIT
+  return 1
 elif [[ "$configFile" == "" ]]; then
   echo "No config file found or specified"
 fi
@@ -64,7 +84,7 @@ fi
 # .config.gitWorktrees[$iw].ref
 
 # .config
-
+set -x
 config=$(cat "${configFile}")
 if [[ "${config}" == "" ]]; then config="{}"; fi
 
@@ -99,32 +119,36 @@ LogAction "mkdir -p $_suitePath/tasks"
   mkdir -p "$_suitePath/builds"
   mkdir -p "$_suitePath/tasks"
 fi
-#
+#  ==========================================================================
 # .config.repositories[]
 #
+
 echo "Processing Repositories"
 GetJsonArray repositoriesArray "${config}" '.config.repositories[]'
 for ((ir=0; ir<${#repositoriesArray[@]}; ir += 1)); do
 
-declare -g _url=""
-declare -g _localRepositoryName=""
-declare -g _originURL=""
-declare -g _upstreamURL=""
-declare -g _originPush=""
-declare -g _upstreamPush=""
-  # .config.repositories[$ir].url
-  # .config.repositories[$ir].localRepositoryName
-  # .config.repositories[$ir].originURL
-  # .config.repositories[$ir].upstreamURL
-  # .config.repositories[$ir].originPush
-  # .config.repositories[$ir].upstreamPush
+  declare -g _url=""
+  declare -g _localRepositoryName=""
+  declare -g _originURL=""
+  declare -g _upstreamURL=""
+  declare -g _originPush=""
+  declare -g _upstreamPush=""
+  # .config.repositoriesArray[$ir].url
+  # .config.repositoriesArray[$ir].localRepositoryName
+  # .config.repositoriesArray[$ir].originURL
+  # .config.repositoriesArray[$ir].upstreamURL
+  # .config.repositoriesArray[$ir].originPush
+  # .config.repositoriesArray[$ir].upstreamPush
 
-  GetJsonString  _url                 "$config" ".config.repositories[$ir].url"
-  GetJsonString  _localRepositoryName "$config" ".config.repositories[$ir].localRepositoryName"
-  GetJsonString  _originURL           "$config" ".config.repositories[$ir].originURL"
-  GetJsonString  _upstreamURL         "$config" ".config.repositories[$ir].upstreamURL"
-  GetJsonString  _originPush          "$config" ".config.repositories[$ir].originPush"
-  GetJsonString  _upstreamPush        "$config" ".config.repositories[$ir].upstreamPush"
+  repoJson="${repositoriesArray[$ir]}"
+
+  GetJsonString  _url                 "$repoJson" ".url"
+  GetJsonString  _localRepositoryName "$repoJson" ".localRepositoryName"
+  GetJsonString  _originURL           "$repoJson" ".originURL"
+  GetJsonString  _upstreamURL         "$repoJson" ".upstreamURL"
+  GetJsonString  _originPush          "$repoJson" ".originPush"
+  GetJsonString  _upstreamPush        "$repoJson" ".upstreamPush"
+
   echo
   echo "$_localRepositoryName"
   echo
@@ -132,78 +156,83 @@ declare -g _upstreamPush=""
   _repositoryPath=$repositories/${_repositoryDir}
   if [[ ! -e $_repositoryPath ]]; then
     LogAction  "cd $repositories"
-    cd "$repositories" || RETURN_OR_EXIT
+    cd "$repositories" || return 1
     LogAction "git clone --bare ${_url} $_repositoryDir"
     git clone --bare "${_url}" "$_repositoryDir"
   fi
-    # if [[  -e $repositories/${_localRepositoryName}.git ]]; then
-    # LogAction "cd $_repositoryPath"
-    # cd "$_repositoryPath" || $RETURN_OR_EXIT
-    # LogAction "git remote remove origin"
-    # git remote remove origin
-    # if [[ "$_originURL" != "" && $_originURL != "null" ]]; then
-    #     if git ls-remote origin >/dev/null 2>&1; then
-    #       echo git remote set-url origin "${_originURL}"
-    #       LogAction "git remote set-url origin ${_originURL}"
-    #       git remote set-url origin "${_originURL}"
-    #     else
+  # if [[  -e $repositories/${_localRepositoryName}.git ]]; then
+  # LogAction "cd $_repositoryPath"
+  # cd "$_repositoryPath" || return 1
+  # LogAction "git remote remove origin"
+  # git remote remove origin
+  # if [[ "$_originURL" != "" && $_originURL != "null" ]]; then
+  #     if git ls-remote origin >/dev/null 2>&1; then
+  #       echo git remote set-url origin "${_originURL}"
+  #       LogAction "git remote set-url origin ${_originURL}"
+  #       git remote set-url origin "${_originURL}"
+  #     else
 
-    #       echo git remote add origin "${_originURL}"
-    #       LogAction "git remote add origin ${_originURL}"
-    #       git remote add origin "${_originURL}"
-    #     fi
-    # fi
-    # LogAction "git remote remove upstream"
-    # git remote remove upstream
-    # if [[ "$_upstreamURL" != "" && $_upstreamURL != "null" ]]; then
-    #     if git ls-remote upstream >/dev/null 2>&1; then
-    #       LogAction "git remote set-url upstream ${_upstreamURL}"
-    #       git remote set-url upstream "${_upstreamURL}"
-    #     else
-    #       if [[ ! "${_upstreamURL}" == "${_originURL}" ]]; then
-    #       LogAction "git remote add upstream ${_upstreamURL}"
-    #       git remote add upstream "${_upstreamURL}"
-    #       fi
-    #     fi
-    # fi
+  #       echo git remote add origin "${_originURL}"
+  #       LogAction "git remote add origin ${_originURL}"
+  #       git remote add origin "${_originURL}"
+  #     fi
+  # fi
+  cd "$_repositoryPath" || return 1
+  LogAction "git remote remove upstream"
+  git remote remove upstream
+  if [[ "$_upstreamURL" != "" && $_upstreamURL != "null" ]]; then
+      if git ls-remote upstream >/dev/null 2>&1; then
+        LogAction "git remote set-url upstream ${_upstreamURL}"
+        git remote set-url upstream "${_upstreamURL}"
+      else
+        if [[ ! "${_upstreamURL}" == "${_originURL}" ]]; then
+        LogAction "git remote add upstream ${_upstreamURL}"
+        git remote add upstream "${_upstreamURL}"
+        fi
+      fi
+  fi
   #   if [[ "$_originPush" != "" && $_originPush != "null" ]]; then
   #     LogAction "git remote set-url --push origin no_push"
   #     git remote set-url --push origin no_push
   #   fi
-
-  #   if [[ "$_upstreamPush" != "" && $_upstreamPush != "null" ]]; then
-  #     LogAction "git remote set-url --push upstream no_push"
-  #     git remote set-url --push upstream no_push
-  #   fi
-  #   git remote -v
-  # fi
+  if [[ "$_upstreamPush" != "" && $_upstreamPush != "null" ]]; then
+    LogAction "git remote set-url --push upstream no_push"
+    git remote set-url --push upstream no_push
+  fi
+    git remote -v
   unset _url=""
   unset _localRepositoryName
   unset _originURL
   unset _upstreamURL
   unset _originPush
   unset _upstreamPush
+
 done # for ((ir=0; ir<${#repositoriesArray[@]}; ir += 1));
 unset ir
 unset repositoriesArray
 
+# ============================================================================
+
 echo "Processing Worktrees"
 
 # .config.gitWorktrees[]
+set -x
 declare -g -a worktreesArray=()
 GetJsonArray worktreesArray "${config}" '.config.gitWorktrees[]'
 for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
-  echo "worktreesArray: $iw - ${worktreesArray[$iw]}"
+  worktreeJson="${worktreesArray[$iw]}"
   # .config.gitWorktrees[$iw].repository
   # .config.gitWorktrees[$iw].ref
   declare -g _repository=""
   declare -g _ref=""
-  GetJsonString  _repository   "${worktreesArray[$iw]}" ".repository"
-  GetJsonString  _ref          "${worktreesArray[$iw]}" ".ref"
+  GetJsonString  _repository   "$worktreeJson" ".repository"
+  GetJsonString  _ref          "$worktreeJson" ".ref"
 
   echo "Worktree for $_repository $_ref"
   _repositoryPath=$repositories/${_repository}.git
   _worktreePath=$worktrees/$_ref/$_repository
+   gitBranchWorktreeContainerDirPath="$worktrees/$_ref"
+   gitWorktreePath="${gitBranchWorktreeContainerDirPath}/${_repository}"
 
   if [[ -e $_repositoryPath ]]; then
     if [[ -e $_worktreePath ]]; then
@@ -212,16 +241,14 @@ for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
   else
     echo "Unknown Repository: $_repositoryPath"
     echo "for worktree: $_worktreePath"
-    $RETURN_OR_EXIT
+    return 1
   fi
   # Note: Creating tags is out of scope, while creating new branches is in scope.
 
   echo  "cd ${_repositoryPath}"
   cd "${_repositoryPath}" ||return 1
 
-  gitBranchWorktreeContainerDirPath="${DEV1_SUITES_PATH}/${suiteName}/worktrees/${_ref}"
-  gitWorktreePath="${gitBranchWorktreeContainerDirPath}/${_repository}"
-  mkdir -p "${gitBranchWorktreeContainerDirPath}"
+   mkdir -p "${gitBranchWorktreeContainerDirPath}"
   unset gitBranchWorktreeContainerDirPath
   if [[ -e ${gitWorktreePath} ]]; then
     LogAction "A worktree for ${_ref} on ${_repository} exists in ${gitWorktreePath}"
@@ -236,13 +263,13 @@ for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
     fi
   fi
   unset gitWorktreePath
-
+  unset gitBranchWorktreeContainerDirPath
   unset _repository
   unset _ref
 done # worktreesArray
 unset worktreesArray
 
-
+# ===================================================================================
 # .config.tasks[]
 
 echo "Processing Tasks"
@@ -251,10 +278,11 @@ GetJsonArray tasksArray "${config}" '.config.tasks[]?'
 for ((it=0; it<${#tasksArray[@]}; it += 1)); do
 # .config.tasks[$it].taskName
 declare -g _taskName
-GetJsonString  _taskName          "$config" ".config.tasks[$it].taskName"
- taskPath=$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}
-  mkdir -p  $taskPath
- 
+taskJson="${tasksArray[$it]}"
+GetJsonString  _taskName    "$taskJson" ".taskName"
+taskPath="$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}"
+mkdir -p  "$taskPath"
+
 # .config.tasks[$it].variants[]
 # .config.tasks[$it].variants[$ib]
 
@@ -262,27 +290,29 @@ echo "Processing variants"
 
   variantsArray=()
   GetJsonString variantsArray "${config}" ".config.tasks[$it].variants[]"
+
   for ((ib=0; ib<${#variantsArray[@]}; ib += 1)); do
     echo "variantsArray: $ib - ${variantsArray[$ib]}"
-  _buildPath=$DEV1_SUITES_PATH/${_suiteName}/builds/${_taskName}/${variantsArray[$ib]}
+    _buildPath=$DEV1_SUITES_PATH/${_suiteName}/builds/${_taskName}/${variantsArray[$ib]}
     if [[ ! -e ${_buildPath} ]]; then
-      LogAction "mkdir -p  "${_buildPath}""
+      LogAction "mkdir -p"  "${_buildPath}"
       mkdir -p "${_buildPath}"
     else
       LogAction "#  ${_buildPath} is the Build Path for ${variantsArray[$ib]}"
     fi
 
     # .config.tasks[$it].variantWorktreeSymbolicLinks[]
-
+    declare -g -a pwdvariantWorktreeSymbolicLinks
     echo "Processing Build Tree Symlinks"
     declare -A availableWorktrees
     variantWorktreeSymbolicLinks=()
     GetJsonArray variantWorktreeSymbolicLinks "${config}" ".config.tasks[$it].variantWorktreeSymbolicLinks[]?"
+    workspaceRoots=()
     for ((is=0; is<${#variantWorktreeSymbolicLinks[@]}; is += 1)); do
       echo "variantWorktreeSymbolicLinks: $is - ${variantWorktreeSymbolicLinks[$is]}"
-    # .config.tasks[$it].variantWorktreeSymbolicLinks[$is].to
-    # .config.tasks[$it].variantWorktreeSymbolicLinks[$is].from
-      declare -g _to
+      # .config.tasks[$it].variantWorktreeSymbolicLinks[$is].to
+      # .config.tasks[$it].variantWorktreeSymbolicLinks[$is].from
+      declare -g _topwd
       declare -g _from
       GetJsonString  _to   "$config" ".config.tasks[$it].variantWorktreeSymbolicLinks[$is].to"
       GetJsonString  _from "$config" ".config.tasks[$it].variantWorktreeSymbolicLinks[$is].from"
@@ -294,58 +324,53 @@ echo "Processing variants"
       fi
       LogAction " ln -s  $_suitePath/${_to} ${_buildPath}/${_from}"
       ln -s  "$_suitePath/${_to}" "${_buildPath}/${_from}"
-          availableWorktrees+=([${_from}]="${_suitePath}/${_to}")
-      echo ${availableWorktrees[${_from}]}
-  
+      workspaceRoots+=("${_to}")
+      availableWorktrees["$_from"]="${_suitePath}/${_to}"
+      echo "${availableWorktrees[${_from}]}"
+
+    # default code
+
   done #variantWorktreeSymbolicLinks
   unset variantWorktreeSymbolicLinks
   done #variantsArray
   unset variantsArray
 
+  unset codeWorkspaceFilePath
+  unset workspaceRoots
+  if [[ ! -e $codeWorkspaceFilePath ]]; then
+      write_code_workspace_file
+  fi
 # .config.tasks[$it].codeWorkspaces[]
 
 echo "Processing Code Workspaces"
   declare -g -a codeWorkspacesArray=()
-  GetJsonArray codeWorkspacesArray "${config}" ".config.tasks[$it].codeWorkspaces[]?"
+  declare -g -a workspaceRoots
+  GetJsonArray codeWorkspacesArray "${tasksArray[$it]}" ".codeWorkspaces[]?"
   for ((ic=0; ic<${#codeWorkspacesArray[@]}; ic += 1)); do
     echo "codeWorkspacesArray: $ic - ${codeWorkspacesArray[$ic]}"
     declare -g _workspaceName
     # .config.tasks[$it].codeWorkspaces[$ic].workspaceName
-    GetJsonString _workspaceName "${config}" ".config.tasks[$it].codeWorkspaces[$ic].codeWorkspaceWorktreeFolders[].workspaceName?"
+    GetJsonString _workspaceName "${codeWorkspacesArray[$ic]}" ".workspaceName?"
     # write beginning of code workspace file
-    codeWorkspaceFilePath="${DEV1_SUITES_PATH}/${_suiteName}/tasks/${_ref}/${_workspaceName}.code-workspace"
+    codeWorkspaceFilePath="${DEV1_SUITES_PATH}/${_suiteName}/tasks/${_taskName}/${_workspaceName}.code-workspace"
+
+    # .config.tasks[$it].codeWorkspaces[$ic].codeWorkspaceWorktreeFolders[]
+    echo "Processing Code Workspace Folders"
+    declare -g -a codeWorkspaceWorktreeFoldersArray=()
+    GetJsonString codeWorkspaceWorktreeFoldersArray "${config}" ".config.tasks[$it].codeWorkspaces[$ic].codeWorkspaceWorktreeFolders[]?"
+    for ((if=0; if<${#codeWorkspaceWorktreeFoldersArray[@]}; if += 1)); do
+      # shellcheck disable=SC2154
+      worktreeId="${codeWorkspaceWorktreeFoldersArray[$if]}"
+      workspaceRoots+=("${availableWorktrees[$worktreeId]}")
+      unset worktreeId
+    done #codeWorkspaceWorktreeFoldersArray
     if [[ ! -e $codeWorkspaceFilePath ]]; then
-      cat <<EOD  >"${codeWorkspaceFilePath}"
-  {
-    "folders": [
-      { "path": "../../project"},
-EOD
-      # .config.tasks[$it].codeWorkspaces[$ic].codeWorkspaceWorktreeFolders[]
-      echo "Processing Code Workspace Folders"
-      GetJsonString codeWorkspaceWorktreeFoldersArray "${config}" ".config.tasks[$it].codeWorkspaces[$ic].codeWorkspaceWorktreeFolders[]?"
-      for ((if=0; if<${#codeWorkspaceWorktreeFoldersArray[@]}; if += 1)); do
-        # shellcheck disable=SC2154
-        worktreeId="${codeWorkspaceWorktreeFoldersArray[$if]}"
-        worktreePath=${availableWorktrees[$worktreeId]}
-        worktreePath=${availableWorktrees[$worktreeId]}
-        echo "   { \"path\": \"$worktreePath\"}," >>"${codeWorkspaceFilePath}"
-        unset worktreeId
-        unset worktreePath
-      done
+        write_code_workspace_file
     fi
-    # write end of code-workspace file
-    cat <<EOD  >>"${codeWorkspaceFilePath}"
-      {"path": "." },
-      {"path": "./.vscode"}
-    ]
-  }
-EOD
-    # TODO match worktree names to worktrees using variants array
-    # TODO write worktree entry in code-workspace file
-    # TODO
+
   done # codeWorkspacesArray
 
-  unset availableWorktrees
+unset availableWorktrees
 done #tasksArray
 
 unset config

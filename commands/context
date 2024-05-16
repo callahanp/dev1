@@ -2,16 +2,16 @@
 #
 # dev1
 # Dev1's operations, ide, build and run depend on
-# the settings for suite, task, code_workspace and variant
+# the settings for suite, task, code_workspace and cMakeBuildType
 # Together, these four determine the values for a number of
 # environment variables set at the end of
 #
 # ide requires suite, task & code-workspace names
-# build requires suite, task, variant, build options/parameters
-# run requires suite, task, variant, run options/parameters.
+# build requires suite, task, cMakeBuildType, build options/parameters
+# run requires suite, task, cMakeBuildType, run options/parameters.
 #
 
-# Values for suite, task, code-workspace and variant are determined
+# Values for suite, task, code-workspace and cMakeBuildType are determined
 # from
 # - parameters given to commands
 # - saved environment variable values
@@ -68,7 +68,6 @@ function resolveSuite(){
   return 0
 }
 function resolveTask(){
-set -x
   tasksPath="$suitePath/tasks"
   searchPath="$tasksPath/"
   taskName=""
@@ -149,73 +148,97 @@ else
     fi
   fi
   resolvedContext['code-workspace']="$codeWorkspaceName"
-  resolvedContext['codeWorkspacePath']="$taskPath/$codeWorkspaceName.code-workspace"
-
 }
 
-function resolveVariant(){
+function resolveCMakeBuildType(){
 
-  variants=("Release" "Debug" "RelWithDebInfo" "MinSizeRel")
+  cMakeBuildTypes=("Release" "Debug" "RelWithDebInfo" "MinSizeRel")
   # shellcheck disable=SC2206
-  lowerCaseVariants=(${variants[@],,})
+  lowerCasecMakeBuildTypes=(${cMakeBuildTypes[@],,})
   v=$1; v=${v,,}
   if [[ "$v" != "" ]]; then
-    for (( iv=0; iv<${#variants[@]}; iv++ )); do
-      if [[ "$v" == "${lowerCaseVariants[$iv]}" ]]; then
-        resolvedContext['variant']="${variants[$iv]}"
+    for (( iv=0; iv<${#cMakeBuildTypes[@]}; iv++ )); do
+      if [[ "$v" == "${lowerCasecMakeBuildTypes[$iv]}" ]]; then
+        resolvedContext['cMakeBuildType']="${cMakeBuildTypes[$iv]}"
       fi
     done
-  fi
+  fi  
   return 0
 }
 #echo "--------------------- Starting Context ---------------------"
+
 if [[ "$DEV1_DEBUG" != "" ]]; then
   echo "starting $DEV1_COMMANDS_PATH/context " "$@"
 fi
+suites=$DEV1_SUITES_PATH
 
 declare -Ag resolvedContext
 
 resolvedContext['suiteName']=""
 resolvedContext['taskName']=""
 resolvedContext['code-workspace']=""
-resolvedContext['variant']=""
+resolvedContext['cMakeBuildType']=""
+if [[ "$1" == "" ]]; then
+  if [[ -e $DEV1_SUITES_PATH/currentSuite ]];then
 
-declare -a inputs
-inputs=("$@")
-for (( ii=0; ii<${#inputs[@]}; ii++ )); do
-  if [[ "${inputs[$ii]}" == "--" ]]; then
-    (( ii=${#inputs[@]} ))
-  else
-    if [[ "${resolvedContext['taskName']}" != "" \
-        && "${resolvedContext['variant']}" == "" ]]; then
-      resolveVariant "${inputs[$ii]}"
-    fi
-    if [[ "${resolvedContext['suiteName']}" == "" ]]; then
-      resolveSuite "${inputs[$ii]}"
-      if [[ "$?" == "1" ]]; then return 1; fi
-      suitePath="${resolvedContext['suitePath']}"
-    elif [[ "${resolvedContext['taskName']}" == "" ]]; then
-      resolveTask "${inputs[$ii]}"
-      if [[ "$?" == "1" ]]; then return 1; fi
-      taskPath="${resolvedContext['taskPath']}"
-    elif [[ "${resolvedContext['code-workspace']}" == "" ]]; then
-      resolveCodeWorkspace "${inputs[$ii]}"
-      if [[ "$?" == "1" ]]; then return 1; fi
-    fi
+
+    suiteName=$(<$DEV1_SUITES_PATH/currentSuite)
+
+    taskName=$(<"$suites/$suiteName/project/currentTask")
+    cmakeBuildType=$(<"$suites/$suiteName/project/currentCodeWorkspaceName")
+    codeWorkspaceName=$(<"$suites/$suiteName/project/currentCmakeBuildType")
+
+    resolvedContext["suiteName"]=$suiteName
+    resolvedContext["taskName"]=$taskName
+    resolvedContext["cmakeBuildType"]=$cmakeBuildType
+    resolvedContext["codeWorkspaceName"]=$codeWorkspaceName
   fi
-done
-resolvedContext['buildPath']="${resolvedContext['suitePath']}"/builds/${resolvedContext['taskName']}"/${resolvedContext['variant']}"
+else
+  declare -a inputs
+  inputs=("$@")
+  for (( ii=0; ii<${#inputs[@]}; ii++ )); do
+    if [[ "${inputs[$ii]}" == "--" ]]; then
+      (( ii=${#inputs[@]} ))
+    else
+      if [[ "${resolvedContext['taskName']}" != "" \
+          && "${resolvedContext['cMakeBuildType']}" == "" ]]; then
+        resolveCMakeBuildType "${inputs[$ii]}"
+      fi
+      if [[ "${resolvedContext['suiteName']}" == "" ]]; then
+        resolveSuite "${inputs[$ii]}"
+        if [[ "$?" == "1" ]]; then return 1; fi
+        suitePath="${resolvedContext['suitePath']}"
+      elif [[ "${resolvedContext['taskName']}" == "" ]]; then
+        resolveTask "${inputs[$ii]}"
+        if [[ "$?" == "1" ]]; then return 1; fi
+        taskPath="${resolvedContext['taskPath']}"
+      elif [[ "${resolvedContext['code-workspace']}" == "" ]]; then
+        resolveCodeWorkspace "${inputs[$ii]}"
+        if [[ "$?" == "1" ]]; then return 1; fi
+      fi
+    fi
+  done
+fi
 
-echo "resolvedContext['buildPath'] ${resolvedContext['buildPath']}"
+resolvedContext['buildPath']="${resolvedContext['suitePath']}"/builds/${resolvedContext['taskName']}"/${resolvedContext['cMakeBuildType']}"
+resolvedContext['codeWorkspacePath']="$taskPath/resolvedContext['codeWorkspaceName'].code-workspace"
+if [[ "${resolvedContext['cMakeBuildType']}" == "" ]]; then
+  resolvedContext['cMakeBuildType']="debug"
+fi
+if [[ "${resolvedContext['code-workspace']}" == "" ]]; then
+  resolvedContext['code-workspace']="$suiteName.$taskName.code-workspace"
+fi
 export resolvedContext
 
 export DEV1_SUITE_NAME="${resolvedContext['suiteName']}"
 export DEV1_SUITE_PATH="${resolvedContext['suitePath']}"
 export DEV1_TASK_NAME="${resolvedContext['taskName']}"
-export DEV1_TASK_PATH="${resolvedContext['taskPath']}"
+export DEV1_CMAKE_BUILD_TYPE_NAME="${resolvedContext['cMakeBuildType']}"
 export DEV1_CODE_WORKSPACE_NAME="${resolvedContext['code-workspace']}"
-export DEV1_CODE_WORKSPACE_PATH="${resolvedContext['codeWorkspacePath']}"
-export DEV1_VARIANT_NAME="${resolvedContext['variant']}"
+export DEV1_TASKS_PATH="$DEV1_SUITE_PATH/tasks"
+export DEV1_TASK_PATH="$DEV1_TASKS_PATH/$DEV1_TASK_NAME"
+export DEV1_CODE_WORKSPACE_PATH="$DEV1_TASK_PATH/$DEV1_CODE_WORKSPACE_NAME"
+
 export DEV1_BUILDS_PATH="$DEV1_SUITE_PATH/builds"
 export DEV1_WORKTREES_PATH="$DEV1_SUITE_PATH/worktrees"
 export DEV1_REPOSITORIES_PATH="$DEV1_SUITE_PATH/repositories"
@@ -223,7 +246,7 @@ export DEV1_RUNS_PATH="$DEV1_SUITE_PATH/runs"
 export DEV1_TASKS_PATH="$DEV1_SUITE_PATH/tasks"
 export DEV1_PROJECT_PATH="$DEV1_SUITE_PATH/project"
 
-export DEV1_BUILD_PATH=$DEV1_BUILDS_PATH/$DEV1_TASK_NAME/$DEV1_VARIANT_NAME
+export DEV1_BUILD_PATH=$DEV1_BUILDS_PATH/$DEV1_TASK_NAME/$DEV1_CMAKE_BUILD_TYPE_NAME
 export DEV1_TASK_PATH=$DEV1_TASKS_PATH/$taskName
 export worktrees=$DEV1_WORKTREES_PATH
 export repositories=$DEV1_REPOSITORIES_PATH
@@ -231,6 +254,21 @@ export builds=$DEV1_BUILDS_PATH
 export runs=$DEV1_RUNS_PATH
 export task=$DEV1_TASK_PATH
 export project=$DEV1_PROJECT_PATH
+
+echo "Suite Name:          $DEV1_SUITE_NAME"
+echo "Task Name:           $DEV1_TASK_NAME"
+echo "Code Workspace Name: $DEV1_CODE_WORKSPACE_NAME"
+echo "CMake Build Type:    $DEV1_CMAKE_BUILD_TYPE_NAME"
+echo "DEV1_CODE_WORKSPACE_PATH : $DEV1_CODE_WORKSPACE_PATH"
+echo
+echo DEV1_SUITES_PATH: $DEV1_SUITES_PATH
+echo DEV1_TASK_PATH:   $DEV1_TASK_PATH
+# ls $DEV1_SUITES_PATH
+# ls $DEV1_TASK_PATH
+echo "$DEV1_SUITE_NAME"            >$DEV1_SUITES_PATH/currentSuite
+echo "$DEV1_TASK_NAME"             >$DEV1_PROJECT_PATH/currentTask
+echo "$DEV1_CODE_WORKSPACE_NAME"   >$DEV1_PROJECT_PATH/currentCodeWorkspaceName
+echo "$DEV1_CMAKE_BUILD_TYPE_NAME" >$DEV1_PROJECT_PATH/currentCmakeBuildType
 
 
 echo "--------------------- Context Complete ---------------------"

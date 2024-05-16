@@ -19,29 +19,32 @@ fi
 source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
 
 source "$DEV1_COMMANDS_PATH/context"  "$1" "$2" "$3"
+# shellcheck disable=SC2320
 if [[ "$?" == "1" ]]; then 
 ${RETURN_OR_EXIT}
 fi
-if [[ "$1" == "--" || "$2" == "--"  || "$3" == "--" || "$4" == "--" ]]; then
-  while [[ ! "$1" == "--" ]]; do
-    shift  # shift options before the --
-  done
-  shift    # shift the --
-fi
-if [[ "${DEV1_TASK_NAME}" == "" \
-   && -e ${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME} ]]; then
-   cd "${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME}" \
-   ||  $RETURN_OR_EXIT
-fi
-echo "${BASH_SOURCE[0]} $*"
-LogAction cd "$DEV1_TASK_PATH"
-cd "$DEV1_TASK_PATH" || ( echo Task Path not found && $RETURN_OR_EXIT_)
-if [[ -e ${DEV1_TASK_NAME}.code-workspace ]]; then
-  workspace="${DEV1_TASK_NAME}.code-workspace"
-elif [[ -e ${DEV1_SUITE_NAME}.code-workspace ]]; then
-  workspace="${DEV1_SUITE_NAME}.code-workspace"
+if [[ -e $DEV1_CODE_WORKSPACE_PATH ]]; then
+  workspace=$DEV1_CODE_WORKSPACE_PATH
 else
-  workspace="."
+  echo "hunting for code workspace path using old code"
+  if [[ "${DEV1_TASK_NAME}" == "" \
+    && -e ${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME} ]]; then
+    cd "${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME}" \
+    ||  $RETURN_OR_EXIT
+  fi
+  echo "${BASH_SOURCE[0]} $*"
+  LogAction cd "$DEV1_TASK_PATH"
+  
+  cd "$DEV1_TASK_PATH" || ( echo Task Path not found && $RETURN_OR_EXIT_)
+  if [[ -e ${DEV1_TASK_NAME}.code-workspace ]]; then
+    workspace="${DEV1_TASK_NAME}.code-workspace"
+  elif [[ -e ${DEV1_SUITE_NAME}.code-workspace ]]; then
+    workspace="${DEV1_SUITE_NAME}.code-workspace"
+  elif [[ -e ${DEV1_SUITE_NAME}${DEV1_TASK_NAME}.code-workspace ]]; then
+    workspace="${DEV1_SUITE_NAME}.code-workspace"
+  else
+    workspace="."
+  fi
 fi
 LogAction code "$workspace"
 code "$workspace"

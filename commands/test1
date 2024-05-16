@@ -1,2 +1,0 @@
-#!/bin/bash
-function someFunc(){ a="something"; if [[ "$a" == "" ]]; then echo "well it worked"; fi }

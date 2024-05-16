@@ -23,7 +23,6 @@ if [[ "$DEV1_SUITES_PATH" == "" ]]; then
     return
 fi
 export DEV1_COMMANDS_PATH=$DEV1/commands
-export DEV1_TEMPLATES_PATH=$DEV1/templates
 cd "${DEV1}"  || return 1
 # shellcheck enable=require-variable-braces
 # shellcheck disable=2142
@@ -58,10 +57,10 @@ alias debug="f(){ source $(pwd)/commands/run \$@ debug ; unset -f f; }; f"
 alias suite="f(){ source $(pwd)/commands/suite \$@; unset -f f; }; f"
 # shellcheck disable=SC2142
 # shellcheck disable=SC2139
-alias status="f(){ source $(pwd)/commands/status \$@; unset -f f; }; f"
+alias status="f(){ source $(pwd)/commands/utils/status \$@; unset -f f; }; f"
 # shellcheck disable=SC2142
 # shellcheck disable=SC2139
-alias maint="f(){ source $(pwd)/commands/maint \$@; unset -f f; }; f"
+alias maint="f(){ source $(pwd)/commands/utils/maint \$@; unset -f f; }; f"
 # shellcheck disable=SC2142
 # shellcheck disable=SC2139
 alias dev1rc="source $(pwd)/dev1rc"
@@ -86,3 +85,4 @@ copy_alias debug g
 alias suites="cd ${DEV1_SUITES_PATH} || return 1; ls -1"
 
 cd "$restore_dir" || return 1
+source $DEV1_COMMANDS_PATH/context 

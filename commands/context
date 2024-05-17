@@ -254,6 +254,10 @@ export builds=$DEV1_BUILDS_PATH
 export runs=$DEV1_RUNS_PATH
 export task=$DEV1_TASK_PATH
 export project=$DEV1_PROJECT_PATH
+export r=$repositories
+export t=$task
+export p=$project
+export w=$worktrees
 
 echo "Suite Name:          $DEV1_SUITE_NAME"
 echo "Task Name:           $DEV1_TASK_NAME"

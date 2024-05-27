@@ -42,6 +42,6 @@ DEV1 does not decide how things should be built, installed, run, or packaged. Sc
 - i or ide: start visual studio code for the current suite and task
 - b or build: build
 - r or run
-- g or debug 
+- g or debug
 
-DEV1 includes support only for VisualStudioCode. But it could quickly adapt to use any other IDE.
+DEV1 includes support only for VisualStudioCode. But it could quickly adapt to use any other IDE

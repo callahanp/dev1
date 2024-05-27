@@ -99,7 +99,7 @@ _buildPath="$_suitePath/builds/$_taskName.$_cMakeBuildType"
 _codeWorkspacePath="$_taskPath/$_suiteName.$_taskName.code-workspace"
 
 if [[ "$_cMakeBuildType" == "" ]]; then
-  _cMakeBuildType="debug"
+  _cMakeBuildType="Debug"
 fi
 
 

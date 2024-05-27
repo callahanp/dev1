@@ -1,0 +1,46 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+declare -g state
+state="Starting 0020Config"
+_startingPoint=$(pwd)
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+fi
+# ------------------------------------------------------
+
+
+
+if [[ "$1" != "" ]]; then
+  if [[ -e $DEV1_SUITES_PATH/$1 ]]; then
+    _configFilePath=$DEV1_SUITES_PATH/$1/project/$1.config.json
+  else
+    _configFilePath=$(realpath "$1")
+  fi
+elif [[ "$DEV1_SUITE_NAME" != "" ]]; then
+  _configFilePath="$DEV1_SUITES_PATH/$DEV1_SUITE_NAME/project/${DEV1_SUITE_NAME}.config.json"
+fi
+if [[ "$_configFilePath" != "" && ! -e $_configFilePath ]]; then
+  echo "unable to find $_configFilePath"
+  return 1
+elif [[ "$_configFilePath" == "" ]]; then
+  echo "No config file found or specified"
+  return 1
+fi
+
+_configJson=$(cat "${_configFilePath}")
+if [[ "$_configJson" == "" ]]; then _configJson="{}"; fi
+
+if ! <<<"$_configJson" jq 'if . == {} then error("empty config found") else . end'; then
+  echo "Config File $_configFilePath" is empty
+  return 1
+fi
+
+unset _configFilePath
+# -------------------------------------------
+export _configJson
+# shellcheck disable=SC2034
+state="Ending 020Config"
+cd "$_startingPoint" || return 0

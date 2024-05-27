@@ -1,0 +1,100 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+declare -g _configJson
+declare -g repositoriesArray
+declare -g _repositoriesPath
+state="Starting 030Repositories"
+_startingPoint=$(pwd)
+
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" "$1"
+  source "$DEV1_PATH/maintenance/022Suite" "called"
+fi
+# ------------------------------------------------------
+
+declare -g unsetx
+declare -g setx
+$unsetx
+GetJsonArray repositoriesArray "${_configJson}" '.repositories[]'
+echo "${#repositoriesArray[@]} repositories found"
+$setx
+for ((ir=0; ir<${#repositoriesArray[@]}; ir += 1)); do
+
+  declare -g _url=""
+  declare -g _localRepositoryName=""
+  declare -g _originURL=""
+  declare -g _upstreamURL=""
+  declare -g _originPush=""
+  declare -g _upstreamPush=""
+  # .config.repositoriesArray[$ir].url
+  # .config.repositoriesArray[$ir].localRepositoryName
+  # .config.repositoriesArray[$ir].originURL
+  # .config.repositoriesArray[$ir].upstreamURL
+  # .config.repositoriesArray[$ir].originPush
+  # .config.repositoriesArray[$ir].upstreamPush
+
+  repoJson="${repositoriesArray[$ir]}"
+
+  GetJsonString  _url                 "$repoJson" ".url"
+  GetJsonString  _localRepositoryName "$repoJson" ".localRepositoryName"
+  GetJsonString  _originURL           "$repoJson" ".originURL"
+  GetJsonString  _upstreamURL         "$repoJson" ".upstreamURL"
+  GetJsonString  _originPush          "$repoJson" ".originPush"
+  GetJsonString  _upstreamPush        "$repoJson" ".upstreamPush"
+
+  echo
+  echo "$_localRepositoryName in $_repositoriesPath/${_repositoryDir}"
+  echo
+  _repositoryDir=${_localRepositoryName}.git
+  _repositoryPath=$_repositoriesPath/${_repositoryDir}
+  if [[ ! -e $_repositoryPath ]]; then
+    LogAction  "cd $_repositoriesPath"
+    cd "$_repositoriesPath" || return 1
+    LogAction "git clone --bare ${_url} $_repositoryDir"
+    git clone --bare "${_url}" "$_repositoryDir"
+  fi
+# TODO Better handling of remotes - modify remote instead of remove
+# TODO Optionally Limit remotes to branches and tags of actual interest.
+
+  cd "$_repositoryPath" || return 1
+  LogAction "git remote remove upstream"
+  git remote remove upstream
+  if [[ "$_upstreamURL" != "" && $_upstreamURL != "null" ]]; then
+      if git ls-remote upstream >/dev/null 2>&1; then
+        LogAction "git remote set-url upstream ${_upstreamURL}"
+        git remote set-url upstream "${_upstreamURL}"
+      else
+        if [[ ! "${_upstreamURL}" == "${_originURL}" ]]; then
+        LogAction "git remote add upstream ${_upstreamURL}"
+        git remote add upstream "${_upstreamURL}"
+        fi
+      fi
+  fi
+  #   if [[ "$_originPush" != "" && $_originPush != "null" ]]; then
+  #     LogAction "git remote set-url --push origin no_push"
+  #     git remote set-url --push origin no_push
+  #   fi
+  if [[ "$_upstreamPush" != "" && $_upstreamPush != "null" ]]; then
+    LogAction "git remote set-url --push upstream no_push"
+    git remote set-url --push upstream no_push
+  fi
+    git remote -v
+  unset _url=""
+  unset _localRepositoryName
+  unset _originURL
+  unset _upstreamURL
+  unset _originPush
+  unset _upstreamPush
+
+done # for ((ir=0; ir<${#repositoriesArray[@]}; ir += 1));
+unset ir
+unset repositoriesArray
+
+# -------------------------------------------
+# shellcheck disable=SC2034
+state="Ending 0030Repositories"
+cd "$_startingPoint" || return 0

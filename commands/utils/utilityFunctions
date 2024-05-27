@@ -1,6 +1,12 @@
 #!/bin/bash
 declare -g _debug=0
-
+if  [ -o xtrace ]; then
+declare -g unsetx="set +x"
+declare -g setx="set -x"
+else
+declare -g unsetx=""
+declare -g setx=""
+fi
 function GetJsonString()
 {
   local -; set +x

@@ -1,0 +1,65 @@
+{
+
+  "suiteName": "dev1",
+  "variables": [
+    {"name": "suiteName",        "value": "dev1"},
+    {"name": "suitesPath",       "value": "/work/suites"},
+    {"name": "suitePath",        "value": "${suitesPath}/${suiteName}"},
+    {"name": "projectPath",      "value": "%{suitePath}/project"},
+
+    {"name": "repositoriesPath", "value": "${suitePath}/repositories/"},
+    {"name": "worktreesPath",    "value": "/${suitePath}/worktrees}"},
+    {"name": "buildsPath",       "value": "${suitePath}/builds"},
+    {"name": "r",                "template": "${suitePath}/repositories/"},
+    {"name": "w",                "template": "/${suitePath}/workspaces}"},
+    {"name": "b",                "template": "${suitePath}/builds"},
+    {"name": "p",                "template": "${suitePath}/project"},
+
+    {"name": "repositoryPath",    "template": "${repositoriesPath}/${repositoryName}"},
+    {"name": "worktreePath",      "template": "${worktreesPath}/${repositoryName}.${workspaceName}"},
+    {"name": "workspacePath",     "template": "${projectPath/${workspaceName}"},
+    {"name": "codeWorkspacePath", "template": "${projectPath}/${workspaceName}.code-workspace"},
+    {"name": "buildPath",         "template": "${buildsPath}/${repositoryName}.${workspaceName}.${cmakeBuildType}"},
+
+    {"name": "configPath",        "template": "${projectPath}/${suiteName}.config.json"}
+  ],
+  "repositories": [
+    {
+      "url": "git@github.com:callahanp/dev1.git",
+      "localRepositoryName": "dev1"
+    }
+  ],
+  "defaultRunCommand": "dev1rc",
+
+  "gitWorktrees": [
+    { "repository": "dev1", "ref": "next" },
+    { "repository": "dev1", "ref": "main" },
+    { "repository": "dev1", "ref": "0001/worktrees/path" }
+  ],
+  "tasks": [
+    {
+      "taskName": "next",
+      "variants": ["Debug"],
+      "runCommand": "dev1rc",
+
+      "variantWorktreeSymbolicLinks": [
+        {"to": "worktrees/next/dev1", "from": "dev1.next"}
+      ]
+    },{
+      "taskName": "main",
+      "variants": ["Debug"],
+      "runCommand": "dev1rc",
+
+      "variantWorktreeSymbolicLinks": [
+        {"to": "worktrees/next/dev1", "from": "dev1.next"}
+      ]
+    },{
+      "taskName": "0001.worktrees.path",
+      "variants": ["Debug"],
+      "runCommand": "dev1rc",
+
+      "variantWorktreeSymbolicLinks": [ "dev1.0001.worktrees.path" ]
+    }
+  ]
+}
+

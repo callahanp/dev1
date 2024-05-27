@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# requires "$1" input file [suitenNAME].config.json
+#  or  DEV1 command suite [suiteName]  to establish suiteName
+#
+# maintenace relies heavily on global variables and sourced bash code \
+# input is a json file : <suite-name>.config.json
+# Each maintenance routine requires
+#
+#  one of
+#    a global variable containing relevant json
+#    a config file and a jq query to populate the required global variable with json
+
+if [[ "$1" == "called" ]]; then
+ shift
+else
+  declare -g startingPointPath
+  startingPointPath=$(pwd);
+fi
+
+source "${DEV1_COMMANDS_PATH}/utils/utilityFunctions"
+
+source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+source "$DEV1_PATH/maintenance/020Config" "called" "$1" 
+source "$DEV1_PATH/maintenance/022Suite" "called"
+source "$DEV1_PATH/maintenance/030Repositories" called
+source "$DEV1_PATH/maintenance/050Worktrees" called
+source "$DEV1_PATH/maintenance/060Tasks" called
+source "$DEV1_PATH/maintenance/062Builds" called
+source "$DEV1_PATH/maintenance/063CodeWorkspaces" called
+
+# unset tasksArray
+# unset ib
+# unset ic
+# unset if
+# unset ir
+# unset is
+# unset it
+# unset iw
+# unset _suiteName
+
+#PrintActionLog
+unset actionLog
+#set -o posix; set
+set +x
+cd "$startingPointPath" || return 1

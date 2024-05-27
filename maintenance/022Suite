@@ -1,0 +1,56 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+
+state="Starting 022Suite"
+_startingPoint=$(pwd)
+if [[ "$1" == "called" ]]; then
+  shift
+else
+
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" called "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" called "$1" 
+  # source "$DEV1_PATH/maintenance/022Suite" "called"
+fi
+declare -g _configJson
+declare -g _suiteName
+declare -g _repositoriesPath
+declare -g _worktreesPath
+declare -g _projectPath
+declare -g _buildsPath
+declare -g _tasksPath
+declare -g unsetx
+declare -g setx
+$unsetx
+GetJsonString "_suiteName" "$_configJson" '.suiteName'
+echo "_suiteName: $_suiteName"
+$setx
+echo "---------------------------- SuiteName: $_suiteName"
+echo "Suite Name:    $_suiteName"
+_suitePath=$DEV1_SUITES_PATH/$_suiteName
+_repositoriesPath="$_suitePath/repositories"
+_worktreesPath="$_suitePath/worktrees"
+_projectPath=$_suitePath/project
+_buildsPath="$_suitePath/builds"
+_tasksPath=$_suitePath/tasks
+
+# shellcheck disable=SC2317
+function _mkdir() {
+  if [[ ! -e "$1" ]];then
+    mkdir -p "$1"
+    LogAction "mkdir -p $1"
+  else
+    "# $1 directory exists"
+  fi
+}
+if [[ ! -e $_suitePath ]]; then
+  _mkdir "$_repositoriesPath"
+  _mkdir "$_worktreesPath"
+  _mkdir "$_projectPath"
+  _mkdir "$_buildsPath"
+  _mkdir "$_tasksPath"
+fi
+
+# shellcheck disable=SC2034
+state="Ending 022Suite"
+cd "$_startingPoint" || return 0

@@ -1,0 +1,39 @@
+#!/bin/bash
+  declare -g _taskName  
+  declare -g _taskPath
+  declare -g _tasksPath
+  echo "--------------"
+  echo "$_tasksPath"
+  _taskName=""
+  mapfile -t foundExactTask< <(find  "$_tasksPath" \
+    -maxdepth 1 -name "$1" -printf "%f\n")
+  mapfile -t foundWildcardTask < <(find "$_tasksPath" \
+    -maxdepth 1 -regex ".*$1.*" -printf "%f\n")
+  if [[ ${foundExactTask[0]} == "" && "${#foundWildcardTask[@]}" == "0" ]]; then
+    _taskName=""
+  elif [[ ${foundExactTask[0]} != "" ]]; then
+    _taskName=$(basename "${foundExactTask[0]}")
+  elif [[ "${#foundWildcardTask[@]}" == "1" ]]; then
+    _taskName=$(basename "${foundWildcardTask[0]}")
+  else
+    echo ""
+    echo " $1 matched more than one task.  Please choose one by number:"
+    echo ""
+    for (( i=0; i<${#foundWildcardTask[@]}; i++ )); do
+        j=$(( i+1 ))
+        echo "$j ${foundWildcardTask[i]}"
+    done
+    unset choice
+    read -rp "choice: " choice
+    choice=$(( choice++ ))
+    _taskName="${foundWildcardTask[$choice]}"
+  fi
+  if [[ "$_taskName" == "" && -e "$_tasksPath/current.task.name" ]]; then
+    _taskName=$(cat <"$_tasksPath/current.task.name")
+  fi
+  if [[ "$_taskName" != "" ]]; then
+    echo "$_taskName" > "$_tasksPath/current.task.name"
+    _taskPath="$_tasksPath/$_taskName"
+  fi
+  unset foundWildcardTask
+  unset foundExactTask

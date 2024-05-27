@@ -1,0 +1,11 @@
+  {
+    "folders": [
+      { "path": "../../project"},
+   { "path": "/work/suites/worktrees/callahanpa-flightgear.tickets.2890"},
+   { "path": "/work/suites/worktrees/flightgear-simgear.next"},
+   { "path": "/work/suites/worktrees/flightgear-fgdata.next"},
+   { "path": "/work/suites/worktrees/callahanpa-fgmeta.next"},
+      {"path": "." },
+      {"path": "./.vscode"}
+    ]
+  }

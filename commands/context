@@ -16,139 +16,16 @@
 # - parameters given to commands
 # - saved environment variable values
 
+declare -g _suitesPath
+declare -g _suiteName
+declare -g _suitePath
+declare -g _projectPath
+declare -g _repositories
+declare -g _worktrees
+declare -g _tasksPath
 
-# shellcheck disable=SC1091
-# shellcheck disable=SC2153
-suitesPath=$DEV1_SUITES_PATH # provided by .bashrc
-function resolveSuite(){
-  suiteName=""
-  mapfile -t foundExactSuite\
-      < <(find "$suitesPath/"\
-            -maxdepth 1 -type d -name "$1")
-  mapfile -t foundWildcardSuite\
-      < <(find "$suitesPath/"\
-        -maxdepth 1 -type d -regex ".*$1.*"  -printf "%f\n")
-
-  if [[ ${foundExactSuite[0]} != "" ]]; then
-    suiteName=$(basename "${foundExactSuite[0]}")
-  elif [[ "${#foundWildcardSuite[@]}" == "1" ]]; then
-    suiteName=${foundWildcardSuite[0]}
-    shift;
-  elif [[ "${#foundWildcardSuite[@]}" == "0" ]]; then
-    suiteName=""
-  else
-    echo ""
-    echo " $1 matched more than one suite.  Please choose one by number:"
-    echo ""
-    for (( i=0; i<${#foundWildcardSuite[@]}; i++ )); do
-      (( i++ ))
-    done
-    unset choice
-    read -rp "choice: " choice
-    choice=$(( choice - 1 ))
-    suiteName="${foundWildcardSuite[$choice]}"
-  fi
-  if [[ "$suiteName" == "" ]]; then
-    if [[ -e $suitesPath/current.suite.name ]]; then
-    suiteName=$(cat <"$suitesPath/.current.suite.name")
-    fi
-  fi
-  if [[ "$suiteName" != "" ]]; then
-    echo "$suiteName" > "$DEV1_SUITES_PATH/.current.suite.name"
-  fi
-  if [[ "$suiteName" == "" ]]; then
-    echo "Error: Unable to resolve Suite Name"
-    return 1
-  else
-    resolvedContext['suiteName']="$suiteName"
-    resolvedContext['suitePath']="$suitesPath/$suiteName"
-  fi
-  unset foundWildcardSuite
-  unset foundExactSuite
-  return 0
-}
-function resolveTask(){
-  tasksPath="$suitePath/tasks"
-  searchPath="$tasksPath/"
-  taskName=""
-  mapfile -t foundExactTask< <(find  "$searchPath"\
-    -maxdepth 1 -name "$1" -printf "%f\n")
-  mapfile -t foundWildcardTask < <(find "$searchPath" \
-    -maxdepth 1 -regex ".*$1.*" -printf "%f\n")
-  if [[ ${foundExactTask[0]} == "" && "${#foundWildcardTask[@]}" == "0" ]]; then
-    taskName=""
-  elif [[ ${foundExactTask[0]} != "" ]]; then
-    taskName=$(basename "${foundExactTask[0]}")
-  elif [[ "${#foundWildcardTask[@]}" == "1" ]]; then
-    taskName=$(basename "${foundWildcardTask[0]}")
-  else
-    echo ""
-    echo " $1 matched more than one task.  Please choose one by number:"
-    echo ""
-    for (( i=0; i<${#foundWildcardTask[@]}; i++ )); do
-        j=$(( i+1 ))
-        echo "$j ${foundWildcardTask[i]}"
-    done
-    unset choice
-    read -rp "choice: " choice
-    choice=$(( choice++ ))
-    taskName="${foundWildcardTask[$choice]}"
-  fi
-  if [[ "$taskName" == "" && -e "$tasksPath/current.task.name" ]]; then
-    taskName=$(cat <"$tasksPath/current.task.name")
-  fi
-  if [[ "$taskName" != "" ]]; then
-    echo "$taskName" > "$tasksPath/current.task.name"
-    resolvedContext['taskName']="$taskName"
-    resolvedContext['taskPath']="$tasksPath/$taskName"
-  fi
-  unset foundWildcardTask
-  unset foundExactTask
-  set +x
-}
-function resolveCodeWorkspace(){
-searchPath="$taskPath"
-codeWorkspaceName=""
-
-declare -a codeWorkspaceFiles
-readarray -d '' codeWorkspaceFiles < <(find "$searchPath" -name '*.code-workspace' -print0)
-
-if [[ "${#codeWorkspaceFiles[@]}" == 1 ]]; then
-  codeWorkspaceName=$(basename "${codeWorkspaceFiles[0]}")
-else
-    mapfile -t foundExactCodeWorkspace< <(find "$searchPath"\
-      -maxdepth 1 -name "$1.code-workspace" -printf "h/%f\n")
-    mapfile -t foundWildcardCodeWorkspace < <(find "$searchPath" \
-      -maxdepth 1 -regex ".*$1.*[.]code-workspace" -printf "%h/%f\n")
-    if [[ ${foundExactCodeWorkspace[0]} == "" ]]; then
-      codeWorkspaceName=""
-    elif [[ ${foundExactCodeWorkspace[0]} != "" ]]; then
-      codeWorkspaceName=$(basename "${foundExactCodeWorkspace[0]}")
-    elif [[ "${#foundWildcardCodeWorkspace[@]}" == "1" ]]; then
-      codeWorkspaceName=$(basename "${foundWildcardCodeWorkspace[0]}")
-
-    else
-      echo ""
-      echo " $1 matched more than one .code-workspace file.  Please choose one by number:"
-      echo ""
-      for (( i=0; i<${#foundWildcardCodeWorkspace[@]}; i++ )); do
-          j=$(( i+1 ))
-          echo "$j ${foundWildcardCodeWorkspace[i]}"
-      done
-      unset choice
-      read -rp "choice: " choice
-      choice=$(( choice - 1 ))
-      echo "choice: $choice"
-      codeWorkspaceName="${foundWildcardCodeWorkspace[$choice]}"
-    fi
-  fi
-  if [[ "$codeWorkspaceName" == "" ]]; then
-    if [[ -e "$taskPath/current.codeWorkspace.name" ]]; then
-      codeWorkspaceName="$(cat "$taskPath/current.codeWorkspace.name")"
-    fi
-  fi
-  resolvedContext['code-workspace']="$codeWorkspaceName"
-}
+declare -g _taskName
+declare -g _taskPath
 
 function resolveCMakeBuildType(){
 
@@ -159,117 +36,124 @@ function resolveCMakeBuildType(){
   if [[ "$v" != "" ]]; then
     for (( iv=0; iv<${#cMakeBuildTypes[@]}; iv++ )); do
       if [[ "$v" == "${lowerCasecMakeBuildTypes[$iv]}" ]]; then
-        resolvedContext['cMakeBuildType']="${cMakeBuildTypes[$iv]}"
+      _cMakeBuildType="${cMakeBuildTypes[$iv]}"
       fi
     done
-  fi  
+  fi
   return 0
 }
 #echo "--------------------- Starting Context ---------------------"
 
-if [[ "$DEV1_DEBUG" != "" ]]; then
-  echo "starting $DEV1_COMMANDS_PATH/context " "$@"
+
+declare -g _suitesPath
+declare -g _suiteName
+declare -g _suitePath
+declare -g _projectPath
+declare -g _repositoriesPath
+declare -g _worktreesPath
+declare -g _tasksPath
+declare -g _buildsPath
+if [[ "$1" != "" ]]; then
+  _suiteName="$1"
+  
+elif [[ -e $DEV1_SUITES_PATH/currentSuiteName ]]; then
+  _suiteName=$(cat $DEV1_SUITES_PATH/currentSuiteName)
 fi
-suites=$DEV1_SUITES_PATH
+if [[ "$_suiteName" == "" ]]; then
+  return 1
+fi
+source "$DEV1_COMMANDS_PATH/contextSuite" "$_suiteName"
+shift
+echo "_tasksPath: $_tasksPath"
+echo "_worktreesPath: $_worktreesPath"
+resolveCMakeBuildType "$1"
 
-declare -Ag resolvedContext
+declare -g _taskName  
+declare -g _taskPath
+if [[ "$1" != "" ]]; then
+  _taskName="$1"
+elif [[ -e $_suitePath/currentTaskName ]]; then
+  _taskName=$(cat $_suitePath/currentTaskName)
+fi
+if [[ "$_taskName" == "" ]]; then
+  return 1
+fi
+source "$DEV1_COMMANDS_PATH/contextTask" "$_taskName"
 
-resolvedContext['suiteName']=""
-resolvedContext['taskName']=""
-resolvedContext['code-workspace']=""
-resolvedContext['cMakeBuildType']=""
-if [[ "$1" == "" ]]; then
-  if [[ -e $DEV1_SUITES_PATH/currentSuite ]];then
-
-
-    suiteName=$(<$DEV1_SUITES_PATH/currentSuite)
-
-    taskName=$(<"$suites/$suiteName/project/currentTask")
-    cmakeBuildType=$(<"$suites/$suiteName/project/currentCodeWorkspaceName")
-    codeWorkspaceName=$(<"$suites/$suiteName/project/currentCmakeBuildType")
-
-    resolvedContext["suiteName"]=$suiteName
-    resolvedContext["taskName"]=$taskName
-    resolvedContext["cmakeBuildType"]=$cmakeBuildType
-    resolvedContext["codeWorkspaceName"]=$codeWorkspaceName
-  fi
-else
-  declare -a inputs
-  inputs=("$@")
-  for (( ii=0; ii<${#inputs[@]}; ii++ )); do
-    if [[ "${inputs[$ii]}" == "--" ]]; then
-      (( ii=${#inputs[@]} ))
-    else
-      if [[ "${resolvedContext['taskName']}" != "" \
-          && "${resolvedContext['cMakeBuildType']}" == "" ]]; then
-        resolveCMakeBuildType "${inputs[$ii]}"
-      fi
-      if [[ "${resolvedContext['suiteName']}" == "" ]]; then
-        resolveSuite "${inputs[$ii]}"
-        if [[ "$?" == "1" ]]; then return 1; fi
-        suitePath="${resolvedContext['suitePath']}"
-      elif [[ "${resolvedContext['taskName']}" == "" ]]; then
-        resolveTask "${inputs[$ii]}"
-        if [[ "$?" == "1" ]]; then return 1; fi
-        taskPath="${resolvedContext['taskPath']}"
-      elif [[ "${resolvedContext['code-workspace']}" == "" ]]; then
-        resolveCodeWorkspace "${inputs[$ii]}"
-        if [[ "$?" == "1" ]]; then return 1; fi
-      fi
-    fi
-  done
+if [[ "$_taskName" == "$1" ]]; then
+  shift
+fi
+resolveCMakeBuildType "$1"
+if [[ "$_cMakeBuildType" == "$1" ]]; then
+  shift
 fi
 
-resolvedContext['buildPath']="${resolvedContext['suitePath']}"/builds/${resolvedContext['taskName']}"/${resolvedContext['cMakeBuildType']}"
-resolvedContext['codeWorkspacePath']="$taskPath/resolvedContext['codeWorkspaceName'].code-workspace"
-if [[ "${resolvedContext['cMakeBuildType']}" == "" ]]; then
-  resolvedContext['cMakeBuildType']="debug"
+source "$DEV1_COMMANDS_PATH/contextCodeWorkspace" "$1"
+shift
+resolveCMakeBuildType "$1"
+if [[ "$_cMakeBuildType" == "$1" ]]; then
+  shift
 fi
-if [[ "${resolvedContext['code-workspace']}" == "" ]]; then
-  resolvedContext['code-workspace']="$suiteName.$taskName.code-workspace"
-fi
-export resolvedContext
 
-export DEV1_SUITE_NAME="${resolvedContext['suiteName']}"
-export DEV1_SUITE_PATH="${resolvedContext['suitePath']}"
-export DEV1_TASK_NAME="${resolvedContext['taskName']}"
-export DEV1_CMAKE_BUILD_TYPE_NAME="${resolvedContext['cMakeBuildType']}"
-export DEV1_CODE_WORKSPACE_NAME="${resolvedContext['code-workspace']}"
+_buildPath="$_suitePath/builds/$_taskName.$_cMakeBuildType"
+_codeWorkspacePath="$_taskPath/$_suiteName.$_taskName.code-workspace"
+
+if [[ "$_cMakeBuildType" == "" ]]; then
+  _cMakeBuildType="debug"
+fi
+
+
+export DEV1_SUITE_NAME="$_suiteName"
+export DEV1_SUITE_PATH="$_suitePath"
+export DEV1_TASK_NAME="$_taskName"
+export DEV1_CMAKE_BUILD_TYPE="$_cMakeBuildType"
 export DEV1_TASKS_PATH="$DEV1_SUITE_PATH/tasks"
 export DEV1_TASK_PATH="$DEV1_TASKS_PATH/$DEV1_TASK_NAME"
-export DEV1_CODE_WORKSPACE_PATH="$DEV1_TASK_PATH/$DEV1_CODE_WORKSPACE_NAME"
+if [[ -f  $_codeWorkspacePath ]]; then
+  export DEV1_CODE_WORKSPACE_PATH="$_codeWorkspacePath"
+elif [[ -f  "$DEV1_TASK_PATH/$DEV1_SUITE_NAME.$DEV1_TASK_NAME.code-workspace" ]]; then
+  export DEV1_CODE_WORKSPACE_PATH="$DEV1_TASK_PATH/$DEV1_SUITE_NAME.$DEV1_TASK_NAME.code-workspace"
+elif [[ -f  "$DEV1_TASK_PATH/$DEV1_SUITE_NAME.$DEV1_TASK_NAME.code-workspace" ]]; then
+  export DEV1_CODE_WORKSPACE_PATH="$DEV1_TASK_PATH/$DEV1_SUITE_NAME.$DEV1_TASK_NAME.code-workspace"
+else
+  export DEV1_CODE_WORKSPATH=""
+fi
+export codeWorkspacePath="$DEV1_CODE_WORKSPATH"
+export DEV1_BUILDS_PATH="$_buildsPath"
+export DEV1_WORKTREES_PATH="$_worktreesPath"
+export DEV1_REPOSITORIES_PATH="$_repositoriesPath"
+export DEV1_TASKS_PATH="$_tasksPath"
+export DEV1_PROJECT_PATH="$_projectPath"
 
-export DEV1_BUILDS_PATH="$DEV1_SUITE_PATH/builds"
-export DEV1_WORKTREES_PATH="$DEV1_SUITE_PATH/worktrees"
-export DEV1_REPOSITORIES_PATH="$DEV1_SUITE_PATH/repositories"
-export DEV1_RUNS_PATH="$DEV1_SUITE_PATH/runs"
-export DEV1_TASKS_PATH="$DEV1_SUITE_PATH/tasks"
-export DEV1_PROJECT_PATH="$DEV1_SUITE_PATH/project"
-
-export DEV1_BUILD_PATH=$DEV1_BUILDS_PATH/$DEV1_TASK_NAME/$DEV1_CMAKE_BUILD_TYPE_NAME
-export DEV1_TASK_PATH=$DEV1_TASKS_PATH/$taskName
-export worktrees=$DEV1_WORKTREES_PATH
-export repositories=$DEV1_REPOSITORIES_PATH
+export DEV1_BUILD_PATH=$DEV1_BUILDS_PATH/$DEV1_TASK_NAME.$DEV1_CMAKE_BUILD_TYPE
+export DEV1_TASK_PATH=$DEV1_TASKS_PATH/$_taskName
+export worktreesPath=$DEV1_WORKTREES_PATH
+export repositoriesPath=$DEV1_REPOSITORIES_PATH
 export builds=$DEV1_BUILDS_PATH
 export runs=$DEV1_RUNS_PATH
 export task=$DEV1_TASK_PATH
 export project=$DEV1_PROJECT_PATH
-
+export b=$builds
+export t=$_taskPath
+export p=$_projectPath
+export w=$_worktreesPath
+export r=$repositoriesPath
+export suitePath=$DEV1_SUITE_PATH
+export s=$_suiteName
 echo "Suite Name:          $DEV1_SUITE_NAME"
 echo "Task Name:           $DEV1_TASK_NAME"
-echo "Code Workspace Name: $DEV1_CODE_WORKSPACE_NAME"
-echo "CMake Build Type:    $DEV1_CMAKE_BUILD_TYPE_NAME"
+echo "Code Workspace Path: $DEV1_CODE_WORKSPACE_PATH"
+echo "CMake Build Type:    $DEV1_CMAKE_BUILD_TYPE"
 echo "DEV1_CODE_WORKSPACE_PATH : $DEV1_CODE_WORKSPACE_PATH"
 echo
-echo DEV1_SUITES_PATH: $DEV1_SUITES_PATH
-echo DEV1_TASK_PATH:   $DEV1_TASK_PATH
+echo DEV1_SUITES_PATH: "$DEV1_SUITES_PATH"
+echo DEV1_TASK_PATH:   "$DEV1_TASK_PATH"
 # ls $DEV1_SUITES_PATH
 # ls $DEV1_TASK_PATH
-echo "$DEV1_SUITE_NAME"            >$DEV1_SUITES_PATH/currentSuite
-echo "$DEV1_TASK_NAME"             >$DEV1_PROJECT_PATH/currentTask
-echo "$DEV1_CODE_WORKSPACE_NAME"   >$DEV1_PROJECT_PATH/currentCodeWorkspaceName
-echo "$DEV1_CMAKE_BUILD_TYPE_NAME" >$DEV1_PROJECT_PATH/currentCmakeBuildType
-
+echo "$DEV1_SUITE_NAME"            >"$DEV1_SUITES_PATH/currentSuite"
+echo "$DEV1_TASK_NAME"             >"$DEV1_PROJECT_PATH/currentTask"
+echo "$DEV1_CODE_WORKSPACE_PATH"   >"$DEV1_PROJECT_PATH/currentCodeWorkspacePathfi"
+echo "$DEV1_CMAKE_BUILD_TYPE" >"$DEV1_PROJECT_PATH/currentCmakeBuildType"
 
 echo "--------------------- Context Complete ---------------------"
-
+cd $_suitePath || return 1

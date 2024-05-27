@@ -1,0 +1,85 @@
+#!/bin/bash
+# 
+# commands/contextSuite
+#
+# Determines which suite a command intends to operate on
+# Sets global variables representing various directoreis that are part of a suite
+
+# Stragegies
+
+  # $1 is empty  
+  #    if $DEV1_SUITES_PATH partially matches $PWD, then the suite is the next part of the path after DEV1_SUITES_PATH
+  #    else $DEV1_SUITES_PATH/currentSuite contains the suite name
+
+  # $1 is not empty and is a suite exactly matching one of the suites in $DEV1_SUITES_PATH
+  #    The matching suite becomes the currentSuite
+  # $1 is a partial match of exactly one of the suites in $DEV1_SUITES_PATH
+  #    The partial match becomes the currentSuite
+  # $1 is a partial match of more than one of the suites in $DEV1_SUITES_PATH
+  #    The user is prompted to select one of the suites
+  #    The selected suite becomes the currentSuite
+    
+  # If the currentSuite does not exist, contextSuite returns 1
+
+if [[ "$1" == "" ]]; then
+  #    if $DEV1_SUITES_PATH partially matches $PWD, then the suite is the next part of the path after DEV1_SUITES_PATH
+  #    else $DEV1_SUITES_PATH/currentSuite contains the suite name
+  _currentSuite=""
+else
+  # $1 is not empty and is a suite exactly matching one of the suites in $DEV1_SUITES_PATH
+  if [[ -e $DEV1_SUITES_PATH/$1 ]]; then
+    _currentSuite="$1"   #    The matching suite becomes the currentSuite
+else
+  mapfile -t foundWildcardSuite\
+      < <(find "$_suitesPath/"\
+        -maxdepth 1 -type d -regex ".*$1.*"  -printf "%f\n")
+
+  if  [[ "${#foundWildcardSuite[@]}" == "1" ]]; then
+    _currentSuite=${foundWildcardSuite[0]} #    The partial match becomes the currentSuite
+  elif [[ "${#foundWildcardSuite[@]}" == "0" ]]; then
+    _currentSuite=""
+    return 1
+  else
+    echo ""
+    echo " $1 matched more than one suite.  Please choose one by number:"
+    echo ""
+    for (( i=0; i<${#foundWildcardSuite[@]}; i++ )); do
+      (( j=i+1 ))
+      echo "$j: ${foundWildcardSuite[$i]}"
+    done
+    unset choice
+    read -rp "choice: " choice
+    choice=$(( choice - 1 ))
+    _currentSuite="${foundWildcardSuite[$choice]}"
+  fi
+
+#    The user is prompted to select one of the suites
+#    The selected suite becomes the currentSuite
+  fi
+fi
+declare -g _suitesPath
+declare -g _suiteName
+declare -g _suitePath
+declare -g _projectPath
+declare -g _repositoriesPath
+declare -g _worktreesPath
+declare -g _tasksPath
+declare -g _buildsPath
+if [[ "$_currentSuite" == "" || ! -e $DEV1_SUITES_PATH/$_currentSuite ]]; then return 1; fi
+_suiteName=$_currentSuite
+_suitesPath=$DEV1_SUITES_PATH
+_suitePath=$_suitesPath/$_suiteName
+_projectPath=$_suitePath/project
+_repositoriesPath=$_suitePath/repositories
+_worktreesPath=$_suitePath/worktrees
+_tasksPath=$_suitePath/tasks
+_buildsPath=$_suitePath/builds
+echo "_suitesPath:   $_suitesPath"
+echo "_suiteName:    $_suiteName"
+echo "_suitePath:    $_suitePath"
+echo "_projectPath:  $_projectPath"
+echo "_repositories: $_repositoriesPath"
+echo "_worktrees:    $_worktreesPath"
+echo "_tasks:        $_tasksPath"
+echo "_buildsPath:   $_buildsPath"
+

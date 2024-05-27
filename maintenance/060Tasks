@@ -1,0 +1,28 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+
+state="Starting 060Tasks"
+_startingPoint=$(pwd)
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" "$1"
+  source "$DEV1_PATH/maintenance/022Suite" "called"
+fi
+# ------------------------------------------------------
+source "$DEV1_PATH/maintenance/061GetTasks" called
+declare -ga _tasksArray
+declare -g _suiteName
+declare -g _taskName
+  for ((it=0; it<${#_tasksArray[@]}; it += 1)); do
+
+  _taskJson="${_tasksArray[$it]}"
+    GetJsonString  _taskName    "$_taskJson" ".taskName"
+    _taskPath="$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}"
+    _mkdir   "$_taskPath"
+done
+# shellcheck disable=SC2034
+state="Ending 060Tasks"
+cd "$_startingPoint" || return 0

@@ -1,6 +1,11 @@
 #!/bin/bash
   # shellcheck disable=SC1091
 declare -g state
+declare -g _configJson
+declare -g sourceforgeUsername
+declare -g githubUsername
+declare -g gitlabUsername
+
 state="Starting 0020Config"
 _startingPoint=$(pwd)
 if [[ "$1" == "called" ]]; then
@@ -37,7 +42,12 @@ if ! <<<"$_configJson" jq 'if . == {} then error("empty config found") else . en
   echo "Config File $_configFilePath" is empty
   return 1
 fi
-
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{sourceforgeUsername}/$sourceforgeUsername/g")
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{githubUsername}/$githubUsername/g")
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{gitlabUsername}/$gitlabUsername/g")
 unset _configFilePath
 # -------------------------------------------
 export _configJson

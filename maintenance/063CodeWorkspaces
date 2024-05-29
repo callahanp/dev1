@@ -1,0 +1,79 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+declare -g state
+state="Starting 063CodeWorkspaces"
+_startingPoint=$(pwd)
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" "$1"
+  source "$DEV1_PATH/maintenance/022Suite" "called"
+  source "$DEV1_PATH/maintenance/061GetTasks"
+fi
+# ------------------------------------------------------
+function write_code_workspace_file
+{
+  declare -a -g _codeWorkspaceWorktreeFoldersArray
+  echo "writing ${_codeWorkspaceFilePath}"
+  cat <<EOD  >"${_codeWorkspaceFilePath}"
+  {
+    "folders": [
+      { "path": "../../project"},
+EOD
+  echo "*******************************************"
+  # write a workspace root for each worktree included in a task
+  for (( ir=0; ir<${#_codeWorkspaceWorktreeFoldersArray[@]}; ir++ ))do
+          echo "   { \"path\": \"$_worktreesPath/${_codeWorkspaceWorktreeFoldersArray[$ir]}\"}," >>"${_codeWorkspaceFilePath}"
+  done
+    # write end of code-workspace file
+  cat <<EOD  >>"${_codeWorkspaceFilePath}"
+      {"path": "." },
+      {"path": "./.vscode"}
+    ]
+  }
+EOD
+}
+echo "SuiteName: $_suiteName"
+declare -g _suiteName
+declare -g _worktreesPath
+declare -ga _tasksArray
+
+for ((it=0; it<${#_tasksArray[@]}; it += 1)); do
+  declare -g _taskName
+  _taskJson="${_tasksArray[$it]}"
+  GetJsonString  _taskName    "$_taskJson" ".taskName"
+  _taskPath="$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}"
+  _mkdir  "$_taskPath"
+  declare -g _codeWorkspaceFilePath
+
+  _codeWorkspaceFilePath="$_taskPath/$_suiteName.$_taskName.code-workspace"
+
+  unset       _sourceWorktreeSymbolicLinks
+  declare -ag _sourceWorktreeSymbolicLinks
+  unset       _codeWorkspaceWorktreeFoldersArray
+  declare -ag _codeWorkspaceWorktreeFoldersArray
+  _codeWorkspaceWorktreeFoldersArray=()
+  _sourceWorktreeSymbolicLinks=()
+  GetJsonArray _sourceWorktreeSymbolicLinks "${_taskJson}" ".sourceWorktreeSymbolicLinks[]?"
+  for ((is=0; is<${#_sourceWorktreeSymbolicLinks[@]}; is += 1)); do
+    GetJsonString  _to  "${_sourceWorktreeSymbolicLinks[is]}" ".to"
+    _codeWorkspaceWorktreeFoldersArray+=("$_to")
+  done
+  write_code_workspace_file
+  echo "--------------------------------------------------------"
+  echo "_codeWorkspaceFilePath: $_codeWorkspaceFilePath"
+  cat  "$_codeWorkspaceFilePath"
+
+
+#TODO add handling for additional code-workspaces for a task.
+done
+unset _sourceWorktreeSymbolicLinks
+unset _codeWorkspaceWorktreeFoldersArray
+unset _codeWorkspaceFilePath
+# -------------------------------------------
+
+# shellcheck disable=SC2034
+state="Ending 063CodeWorkspaces"
+cd "$_startingPoint" || return 0

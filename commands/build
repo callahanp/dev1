@@ -1,8 +1,5 @@
 #!/bin/bash
-# if [[ ! "$DEV1_DEBUG" == "" ]]; then
-#   echo "starting $DEV1/commands/build $*"
-#   set -x
-# fi
+
 
 # echo "cd $(pwd)"
 # echo "${BASH_SOURCE[0]})" "$@"
@@ -37,17 +34,17 @@ else
   echo "    $build1"
   echo " or $build2"
   echo "you need to provide one"
-  RETURN_OR_EXIT
+  return 1
 fi
 
 # shellcheck disable=SC1090
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-LogAction source $buildScript "$@"
+LogAction source $buildScript "context-is-set"
 # shellcheck disable=SC1090
 # shellcheck disable=SC2086
 # shellcheck disable=SC2068
-source $buildScript "$@"
+source $buildScript "context-is-set"
 PrintActionLog
 
 

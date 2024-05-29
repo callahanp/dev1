@@ -8,20 +8,13 @@
 #   - Project code workspace not found
 # Parameter sets:
 # no-parameters: use previous task
-# set -x #uncomment to debug
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then RETURN_OR_EXIT="exit"; else RETURN_OR_EXIT="return"; fi
-
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/ide $*"
-  set -x
-fi
 source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
 
 source "$DEV1_COMMANDS_PATH/context"  "$1" "$2" "$3"
 # shellcheck disable=SC2320
 if [[ "$?" == "1" ]]; then 
-${RETURN_OR_EXIT}
+  return 1
 fi
 if [[ -e $DEV1_CODE_WORKSPACE_PATH ]]; then
   workspace=$DEV1_CODE_WORKSPACE_PATH
@@ -30,13 +23,15 @@ else
   if [[ "${DEV1_TASK_NAME}" == "" \
     && -e ${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME} ]]; then
     cd "${DEV1_SUITES_PATH}/${DEV1_SUITE_NAME}/repositories/${DEV1_SUITE_NAME}" \
-    ||  $RETURN_OR_EXIT
+    ||  return 1
   fi
   echo "${BASH_SOURCE[0]} $*"
   LogAction cd "$DEV1_TASK_PATH"
   
-  cd "$DEV1_TASK_PATH" || ( echo Task Path not found && $RETURN_OR_EXIT_)
-  if [[ -e ${DEV1_TASK_NAME}.code-workspace ]]; then
+  cd "$DEV1_TASK_PATH" || ( echo Task Path not found && return 1)
+  if [[ "$DEV1_CODE_WORKSPACE_PATH" != "" && -e $DEV1_CODE_WORKSPACE_PATH ]]; then
+    workspace=$DEV1_CODE_WORKSPACE_PATH
+  elif [[ -e ${DEV1_TASK_NAME}.code-workspace ]]; then
     workspace="${DEV1_TASK_NAME}.code-workspace"
   elif [[ -e ${DEV1_SUITE_NAME}.code-workspace ]]; then
     workspace="${DEV1_SUITE_NAME}.code-workspace"

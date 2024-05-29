@@ -1,0 +1,98 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+
+state="Starting 050Worktrees"
+_startingPoint=$(pwd)
+declare -g _configJson
+declare -g _repositoriesPath
+declare -g _worktreesPath
+# adding echo to this function breaks it
+
+function is_in_local() {
+    local branch="${1}"
+    local existed_in_local
+    existed_in_local=$(git branch --list "${branch}")
+    if [[ ${existed_in_local} != "" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" "$1"
+  source "$DEV1_PATH/maintenance/022Suite" "called"
+fi
+# ------------------------------------------------------
+
+# .config.gitWorktrees[]
+declare -ga worktreesArray=()
+declare -g unsetx
+declare -g setx
+$unsetx
+GetJsonArray worktreesArray "${_configJson}" '.gitWorktrees[]'
+echo "${#worktreesArray[@]} worktrees found"
+$setx
+for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
+  worktreeJson="${worktreesArray[$iw]}"
+  # .config.gitWorktrees[$iw].repository
+  # .config.gitWorktrees[$iw].ref
+  declare -g _repository=""
+  declare -g _ref=""
+  GetJsonString  _repository   "$worktreeJson" ".repository"
+  GetJsonString  _ref          "$worktreeJson" ".ref"
+
+  echo "Worktree for $_repository $_ref"
+  _worktreeRef=$(echo "$_ref" |sed -r 's/[/-]+/./g')
+  _repositoryPath=$_repositoriesPath/${_repository}.git
+  _oldGitWorktreePath=$_worktreesPath/$_ref/$_repository
+  _oldGitWorktreeRootPath=${_oldGitWorktreePath%%worktrees*}worktrees/$_ref
+  _gitWorktreePath=$_worktreesPath/$_repository.$_worktreeRef
+
+  if [[ ! -e $_repositoryPath ]]; then
+    echo "error $_repository not found"
+    return 1
+  fi
+
+  if [[ -e $_gitWorktreePath && -e $_oldGitWorktreePath ]]; then
+    echo "Both the old and new worktree paths were found:"
+    echo "Old: $_oldGitWorktreePath:"
+    echo "New: $_gitWorktreePath"
+    return 1
+  fi
+  # Note: Creating tags is out of scope, while creating new branches is in scope.
+    echo  "cd ${_repositoryPath} line 256"
+  cd "${_repositoryPath}" ||return 1
+  if [[ ! -e "$_gitWorktreePath" && -e "$_oldGitWorktreePath" ]]; then
+    LogAction "# Moving worktree -- Old: $_oldGitWorktreePath: to New: $_gitWorktreePath"
+    LogAction "git worktree move $_oldGitWorktreePath $_gitWorktreePath"
+    git worktree move "$_oldGitWorktreePath" "$_gitWorktreePath"
+  fi
+
+  if [[ -e ${_gitWorktreePath} ]]; then
+    LogAction "A worktree for ${_ref} on ${_repository} exists in ${_gitWorktreePath}"
+  else
+    echo "Creating worktree for branch ${_ref} in ${_gitWorktreePath}"
+    if  is_in_local "${_ref}"; then
+        LogAction  "git worktree add ${_gitWorktreePath} ${_ref}"
+        if ! git worktree add "${_gitWorktreePath}" "${_ref}"; then return 1; fi
+    else
+        LogAction git worktree add "${_gitWorktreePath}" -b "${_ref}"
+        if ! git worktree add "${_gitWorktreePath}" -b "${_ref}"; then return 1 ;fi
+    fi
+  fi
+  unset _gitWorktreePath
+  unset _repository
+  unset _ref
+done # worktreesArray
+unset worktreesArray
+
+# ====
+# -------------------------------------------
+# shellcheck disable=SC2034
+state="Ending 050worktrees"
+cd "$_startingPoint" || return 0

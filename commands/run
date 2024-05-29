@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [[ ! "$DEV1_DEBUG" == "" ]]; then
-  echo "starting $DEV1/commands/run $*"
-  set -x
-fi
-
 echo "cd $(pwd)"
 echo "${BASH_SOURCE[0]})" "$@"
 source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
@@ -25,7 +20,7 @@ else
   echo "    $run1"
   echo " or $run2"
   echo "you need to provide one"
-  RETURN_OR_EXIT
+  return 1
 fi
 
 # shellcheck disable=SC2086

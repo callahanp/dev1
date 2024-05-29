@@ -1,0 +1,76 @@
+#!/bin/bash
+  # shellcheck disable=SC1091
+_startingPoint=$(pwd)
+declare -g _configJson
+declare -g _taskJson
+declare -g _suiteName
+declare -g _taskName
+declare -g _configJson
+declare -g _worktreesPath
+declare -g _buildsPath
+declare -ga sourceWorktreeSymbolicLinks
+state="Starting 062Builds $1 $2"
+declare -ga _tasksArray
+if [[ "$1" == "called" ]]; then
+  shift
+else
+  source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
+  source "$DEV1_PATH/maintenance/010Globals" "$1" reset
+  source "$DEV1_PATH/maintenance/020Config" "$1"
+  source "$DEV1_PATH/maintenance/022Suite" "called"
+  source "$DEV1_PATH/maintenance/061GetTasks" "called"
+fi
+# ------------------------------------------------------
+
+function createSourceWorktreeLinks(){
+
+echo "Processing cMakeBuildTypes"
+
+  cMakeBuildTypesArray=()
+  GetJsonString cMakeBuildTypesArray "${_taskJson}" ".cMakeBuildTypes[]?"
+  if [[ "${#cMakeBuildTypesArray}" == "0" ]]; then
+    cMakeBuildTypesArray+=("Debug")
+  fi
+  for ((ib=0; ib<${#cMakeBuildTypesArray[@]}; ib += 1)); do
+    sourceWorktreeSymbolicLinks=()
+    echo "cMakeBuildTypesArray: $ib - ${cMakeBuildTypesArray[$ib]}"
+    _buildsPath="$DEV1_SUITES_PATH/${_suiteName}/builds"
+    _buildPath=$_buildsPath/${_taskName}.${cMakeBuildTypesArray[$ib]}
+    if [[ ! -e ${_buildPath} ]]; then
+      _mkdir "${_buildPath}"
+    else
+      LogAction "#  ${_buildPath} is the Build Path for ${cMakeBuildTypesArray[$ib]}"
+    fi
+    echo "Processing Build Tree Symlinks"
+    declare _linkName
+    declare _linkTo
+    sourceWorktreeSymbolicLinks=()
+    GetJsonString _taskName "${_taskJson}" ".taskName?"
+
+    GetJsonArray sourceWorktreeSymbolicLinks "${_taskJson}" ".sourceWorktreeSymbolicLinks[]?"
+    cd "$_buildPath" || return 1
+    for ((is=0; is<${#sourceWorktreeSymbolicLinks[@]}; is += 1)); do
+      echo "sourceWorktreeSymbolicLinks: $is - ${sourceWorktreeSymbolicLinks[$is]}"
+      GetJsonString _linkName "${sourceWorktreeSymbolicLinks[$is]}" ".from"
+      GetJsonString _linkTo "${sourceWorktreeSymbolicLinks[$is]}" ".to?"
+      echo "Sym_link for $_linkTo $_linkName"
+      if [[ -L "${_linkName}" ]]; then
+        rm  "${_linkName}"
+      fi
+      LogAction "ln -s  $_linkTo $_linkName"
+      ln -s  "$_worktreesPath/$_linkTo" "$_linkName"
+    done #sourceWorktreeSymbolicLinks
+
+  done #cMakeBuildTypesArray
+  unset cMakeBuildTypesArray
+}
+  for (( it=0; it< ${#_tasksArray[@]}; it++ )); do
+    _taskJson="${_tasksArray[$it]}"
+     createSourceWorktreeLinks
+     unset _taskJson
+  done
+
+# -------------------------------------------
+# shellcheck disable=SC2034
+state="Ending 062Builds"
+cd "$_startingPoint" || return 0

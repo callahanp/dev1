@@ -1,0 +1,27 @@
+#!/bin/bash
+  o=$(pwd)
+findDir="."
+if [[ "$1" == "find" ]]; then
+  if [[ "$2" != "" ]]; then
+    findDir=$2
+    declare -a gits
+    mapfile -d $'\0' gits < <(find $findDir -name "\.git" -print0)
+    for (( i=0; i<${#gits}; i++ )) do
+      if [[ ! -e gits/FETCH_HEAD ]]; then
+       echo git: "$git"
+        git="${gits[$i]}"
+        cd "${git%%.git}" || exit 1
+
+        git status -vv
+      fi
+    done
+  fi
+else
+  declare -g worktrees
+  source "$DEV1_COMMANDS_PATH/context" "$1" $2
+  for d in $worktrees/*; do 
+    cd "$d" || return 1
+    git status
+  done
+fi
+cd "$o" || exit 1

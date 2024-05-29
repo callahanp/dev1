@@ -1,0 +1,55 @@
+#!/bin/bash
+
+state="Starting 010Globals"
+_startingPoint=$(pwd)
+if [[ "$1" == "reset" || "$1" == "unset" ]]; then
+  unset _startingPointpath
+  unset _configFilePath
+  unset _configJson
+  unset _repositoriesArray
+  unset _repositoryJson
+  unset _worktreesJson
+  unset _worktreeJson
+  unset _tasksArray
+  unset _taskJson
+  unset _taskBuildWorktreesJson
+  unset _taskBuildWorktreeJson
+  unset _taskCodeWorkspacesJson
+  unset _taskCodeWorkspaceJson
+  unset _suite_path
+  unset _repositoriesPath
+  unset _worktreesPath
+  unset _tasksPath
+fi
+if [[ "$1" != "unset" ]];then
+  declare -g  _state
+  declare -g  _suitePath
+  declare -g  _configFilePath
+  declare -g  _configJson
+  
+  declare -g  _repositoriesPath
+  declare -ga _repositoriesArray
+  declare -g  _repositoryJson
+
+  declare -g  _worktreesPath
+  declare -ga _worktreesJson
+  declare -g  _worktreeJson
+
+  declare -ga _tasksArray
+  declare -g  _taskJson
+  declare -g  _taskPath
+
+  declare -ga _taskBuildWorktreesJson
+  declare -g  _taskBuildWorktreeJson
+  declare -g  _taskBuildWorktreeSymlinkPath
+  declare -g  _taskBuildWorktreeLinkTargetPath
+
+  declare -ga _taskCodeWorkspacesJson
+  declare -g  _taskCodeWorkspaceJson
+  declare -g  _taskCodeWorkspacePath
+  declare -g  _taskCodeWorkspaceRootPath
+  _suite_path=$DEV1_SUITE_PATH
+fi
+# shellcheck disable=SC2034
+state="Ending 010Globals"
+cd "$_startingPoint" || return 0

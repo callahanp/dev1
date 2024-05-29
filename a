@@ -1,0 +1,5 @@
+clear;
+set -x
+source maintenance/063CodeWorkspaces /work/suites/fg/project/fg.config.json
+set +x
+

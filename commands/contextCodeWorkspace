@@ -1,0 +1,53 @@
+#!/bin/bash
+
+declare -g _taskPath
+declare -g _codeWorkspaceName
+declare -g _codeWorkspacePath
+
+searchPath="$_taskPath"
+codeWorkspaceName=""
+
+declare -a codeWorkspaceFiles
+readarray -d '' codeWorkspaceFiles < <(find "$searchPath" -name '*.code-workspace' -print0)
+if [[ "${#codeWorkspaceFiles[@]}" == 1 ]]; then
+  codeWorkspaceName=$(basename "${codeWorkspaceFiles[0]}")
+else
+    mapfile -t foundExactCodeWorkspace< <(find "$searchPath"\
+      -maxdepth 1 -name "$1.code-workspace" -printf "h/%f\n")
+    mapfile -t foundWildcardCodeWorkspace < <(find "$searchPath" \
+      -maxdepth 1 -regex ".*$1.*[.]code-workspace" -printf "%h/%f\n")
+
+    if [[ ${foundExactCodeWorkspace[0]} == "" ]]; then
+      _codeWorkspaceName=""
+    elif [[ ${foundExactCodeWorkspace[0]} != "" ]]; then
+      _codeWorkspaceName=$(basename "${foundExactCodeWorkspace[0]}")
+    elif [[ "${#foundWildcardCodeWorkspace[@]}" == "1" ]]; then
+      _codeWorkspaceName=$(basename "${foundWildcardCodeWorkspace[0]}")
+    else
+      echo ""
+      echo " $1 matched more than one .code-workspace file.  Please choose one by number:"
+      echo ""
+      for (( i=0; i<${#foundWildcardCodeWorkspace[@]}; i++ )); do
+          j=$(( i+1 ))
+          echo "$j ${foundWildcardCodeWorkspace[i]}"
+      done
+      unset choice
+      read -rp "choice: " choice
+      choice=$(( choice - 1 ))
+      echo "choice: $choice"
+      _codeWorkspaceName="${foundWildcardCodeWorkspace[$choice]}"
+    fi
+  fi
+  if [[ "$codeWorkspaceName" == "" ]]; then
+    if [[ -e "$_taskPath/current.codeWorkspace.name" ]]; then
+      _codeWorkspaceName="$(cat "$_taskPath/current.codeWorkspace.name")"
+    fi
+  fi
+  _codeWorkspacePath=$_taskPath/$_codeWorkspaceName
+  if [[ -f $_codeWorkspacePath ]]; then
+
+  echo "codeWorkspaceName: $_codeWorkspaceName"
+  echo "codeWorkspacePath: $_codeWorkspacePath"
+  echo" $_codeWorkspaceName" >"$_taskPath/current.codeWorkspace.name"
+  fi
+

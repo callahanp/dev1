@@ -16,6 +16,7 @@ source "$DEV1_PATH/maintenance/061GetTasks" called
 declare -ga _tasksArray
 declare -g _suiteName
 declare -g _taskName
+declare -g _title
   for ((it=0; it<${#_tasksArray[@]}; it += 1)); do
 
   _taskJson="${_tasksArray[$it]}"
@@ -26,7 +27,8 @@ declare -g _taskName
     _mkdir   "$_taskPath/.vscode"
     if [[ "$_title" != "" && "$_title" != "null" ]]; then
       echo "$_title" >"$_taskPath/window.title"
-      touch "$_title"
+      touch "$_taskPath/$_title"
+    fi
 done
 # shellcheck disable=SC2034
 state="Ending 060Tasks"

@@ -5,7 +5,10 @@ state="Starting 050Worktrees"
 _startingPoint=$(pwd)
 declare -g _configJson
 declare -g _repositoriesPath
+declare -g _suiteName
+declare -g _taskName
 declare -g _worktreesPath
+declare -g _codeWorkspaceWorktreeFoldersArray
 # adding echo to this function breaks it
 
 function is_in_local() {
@@ -33,6 +36,9 @@ fi
 declare -ga worktreesArray=()
 declare -g unsetx
 declare -g setx
+declare -g _build
+declare -g _task
+declare -g _title
 $unsetx
 GetJsonArray worktreesArray "${_configJson}" '.gitWorktrees[]'
 echo "${#worktreesArray[@]} worktrees found"
@@ -45,7 +51,11 @@ for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
   declare -g _ref=""
   GetJsonString  _repository   "$worktreeJson" ".repository"
   GetJsonString  _ref          "$worktreeJson" ".ref"
-
+  GetJsonString  _task          "$worktreeJson" ".task"
+  GetJsonString  _build         "$worktreeJson" ".build"
+  GetJsonString  _title         "$worktreeJson" ".title"
+  echo "_task:  $_task"
+  echo "_build: $_build"
   echo "Worktree for $_repository $_ref"
   _worktreeRef=$(echo "$_ref" |sed -r 's/[/-]+/./g')
   _repositoryPath=$_repositoriesPath/${_repository}.git
@@ -85,6 +95,21 @@ for ((iw=0; iw<${#worktreesArray[@]}; iw += 1)); do
         if ! git worktree add "${_gitWorktreePath}" -b "${_ref}"; then return 1 ;fi
     fi
   fi
+  if [[ "$_task" == "true" ]]; then
+    _taskDirName=$(echo "$_ref"| sed -e 's/[/]/./g' -e 's/-/./g')
+    _taskPath="$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskDirName}"
+    mkdir -p "$_taskPath"
+    _codeWorkspaceWorktreeFoldersArray=( "$_suiteName.$_taskDirName.")
+    source "$DEV1_PATH/maintenance/063CodeWorkspaces" "called"
+    if [[ "$_title" != "null" ]]; then
+      echo "$_title" >"$_taskPath/window.title"
+    fi
+  fi
+  if [[ "$_build" == "true" ]]; then
+  echo "Build Stub in 050Worktrees"
+  fi
+
+
   unset _gitWorktreePath
   unset _repository
   unset _ref

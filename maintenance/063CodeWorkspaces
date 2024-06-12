@@ -2,10 +2,11 @@
   # shellcheck disable=SC1091
 declare -g state
 state="Starting 063CodeWorkspaces"
-_startingPoint=$(pwd)
+
 if [[ "$1" == "called" ]]; then
   shift
 else
+  _startingPoint=$(pwd)
   source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
   source "$DEV1_PATH/maintenance/010Globals" "$1" reset
   source "$DEV1_PATH/maintenance/020Config" "$1"
@@ -76,4 +77,6 @@ unset _codeWorkspaceFilePath
 
 # shellcheck disable=SC2034
 state="Ending 063CodeWorkspaces"
-cd "$_startingPoint" || return 0
+if [[ "$_startingPoint" != "" ]]; then
+  cd "$_startingPoint" || return 0
+fi

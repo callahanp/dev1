@@ -7,6 +7,54 @@ else
 declare -g unsetx=""
 declare -g setx=""
 fi
+function GetTaskDescription(){
+set -x
+declare -g _TaskDescription
+GetConfigJson "$1"
+}
+function GetConfigJson(){
+declare -g sourceforgeUsername
+declare -g githubUsername
+declare -g gitlabUsername
+declare -g _configJson
+# three ways to determine config file
+if [[ "$1" != "" ]]; then
+  if [[ -e $DEV1_SUITES_PATH/$1 ]]; then
+    # 1. $1 is a suite name
+    _configFilePath=$DEV1_SUITES_PATH/$1/project/$1.config.json
+  else
+    # 2. $1 is a path to a config file
+    _configFilePath=$(realpath "$1")
+  fi
+elif [[ "$DEV1_SUITE_NAME" != "" ]]; then
+  # 3. $1 is blank, and the current suite is used
+  _configFilePath="$DEV1_SUITES_PATH/$DEV1_SUITE_NAME/project/${DEV1_SUITE_NAME}.config.json"
+fi
+if [[ "$_configFilePath" != "" && ! -e $_configFilePath ]]; then
+  echo "unable to find $_configFilePath"
+  return 1
+elif [[ "$_configFilePath" == "" ]]; then
+  echo "No config file found or specified"
+  return 1
+fi
+
+_configJson=$(cat "${_configFilePath}")
+if [[ "$_configJson" == "" ]]; then _configJson="{}"; fi
+
+if ! <<<"$_configJson" jq 'if . == {} then error("empty config found") else . end'; then
+  echo "Config File $_configFilePath" is empty
+  return 1
+fi
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{sourceforgeUsername}/$sourceforgeUsername/g")
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{githubUsername}/$githubUsername/g")
+# shellcheck disable=SC2001
+_configJson=$(echo "$_configJson"|sed -e "s/[$]{gitlabUsername}/$gitlabUsername/g")
+unset _configFilePath
+# -------------------------------------------
+export _configJson
+}
 function GetJsonString()
 {
   local -; set +x
@@ -29,7 +77,7 @@ function ShowJson()
 {
   local -; set +x
   while [[ "$1" != "" ]] ; do
-    echo "$1:" 
+    echo "$1:"
     echo "$1" | ${!1} jq '.'
     shift
   done
@@ -50,8 +98,8 @@ function ShowArray()
 declare -g _debug_on
 function DumpVars() {
   (set +x; if (( _debug_on )); then #
-    echo " "; 
-    echo --------------------------------------------------------------; 
+    echo " ";
+    echo --------------------------------------------------------------;
     while  [[ "$1" != "" ]]; do declare -p "${1}"; shift; done; \
     echo --------------------------------------------------------------; \
   fi )
@@ -107,7 +155,7 @@ local -; set +x
   local _d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
   while [[ ${actionLog["$_d"]} != "" ]]; do
     _d=$(date +"%Y-%m-%d %H:%M:%S.%3N")
-  done 
+  done
   actionLog["$_d"]="$*"
   # shellcheck disable=SC2086
   echo ${actionLog["$_d"]}

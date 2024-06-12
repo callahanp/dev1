@@ -3,11 +3,12 @@
 declare -g _configJson
 declare -ga _tasksArray
 state="Starting 061GetTasks"
-_startingPoint=$(pwd)
+
 
 if [[ "$1" == "called" ]]; then
   shift
 else
+  _startingPoint=$(pwd)
   source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
   source "$DEV1_PATH/maintenance/010Globals" "$1" reset
   source "$DEV1_PATH/maintenance/020Config" "$1"
@@ -26,4 +27,6 @@ $setx
 
 # shellcheck disable=SC2034
 state="Ending 061GetTasks"
-cd "$_startingPoint" || return 0
+if [[ "$_startingPoint" != "" ]]; then
+  cd "$_startingPoint" || return 0
+fi

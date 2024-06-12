@@ -20,8 +20,13 @@ declare -g _taskName
 
   _taskJson="${_tasksArray[$it]}"
     GetJsonString  _taskName    "$_taskJson" ".taskName"
+    GetJsonString  _title    "$_taskJson" ".title"
     _taskPath="$DEV1_SUITES_PATH/${_suiteName}/tasks/${_taskName}"
     _mkdir   "$_taskPath"
+    _mkdir   "$_taskPath/.vscode"
+    if [[ "$_title" != "" && "$_title" != "null" ]]; then
+      echo "$_title" >"$_taskPath/window.title"
+      touch "$_title"
 done
 # shellcheck disable=SC2034
 state="Ending 060Tasks"

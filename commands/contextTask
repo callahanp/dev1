@@ -1,5 +1,5 @@
 #!/bin/bash
-  declare -g _taskName  
+  declare -g _taskName
   declare -g _taskPath
   declare -g _tasksPath
   echo "--------------"
@@ -34,6 +34,10 @@
   if [[ "$_taskName" != "" ]]; then
     echo "$_taskName" > "$_tasksPath/current.task.name"
     _taskPath="$_tasksPath/$_taskName"
+  fi
+  if [[ -e "$_taskPath"/window.title ]]; then
+    _title=$(<"$_taskPath/window.title" )
+    PS1="\[\e]0;${_title}\a\]$(echo $PS1|sed -e 's/[\][\e].*\\a'//)"
   fi
   unset foundWildcardTask
   unset foundExactTask

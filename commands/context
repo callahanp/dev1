@@ -57,7 +57,7 @@ if [[ "$1" != "" ]]; then
   _suiteName="$1"
 
 elif [[ -e $DEV1_SUITES_PATH/currentSuiteName ]]; then
-  _suiteName=$(cat $DEV1_SUITES_PATH/currentSuiteName)
+  _suiteName=$(cat $DEV1_SUITES_PATH/curren.suite.name)
 fi
 if [[ "$_suiteName" == "" ]]; then
   return 1
@@ -73,7 +73,7 @@ declare -g _taskPath
 if [[ "$1" != "" ]]; then
   _taskName="$1"
 elif [[ -e $_suitePath/currentTaskName ]]; then
-  _taskName=$(cat $_suitePath/currentTaskName)
+  _taskName=$(cat $_suitePath/current.task.name)
 fi
 if [[ "$_taskName" == "" ]]; then
   return 1
@@ -150,10 +150,10 @@ echo DEV1_SUITES_PATH: "$DEV1_SUITES_PATH"
 echo DEV1_TASK_PATH:   "$DEV1_TASK_PATH"
 # ls $DEV1_SUITES_PATH
 # ls $DEV1_TASK_PATH
-echo "$DEV1_SUITE_NAME"            >"$DEV1_SUITES_PATH/currentSuite"
-echo "$DEV1_TASK_NAME"             >"$DEV1_PROJECT_PATH/currentTask"
-echo "$DEV1_CODE_WORKSPACE_PATH"   >"$DEV1_PROJECT_PATH/currentCodeWorkspacePathfi"
-echo "$DEV1_CMAKE_BUILD_TYPE" >"$DEV1_PROJECT_PATH/currentCmakeBuildType"
+echo "$DEV1_SUITE_NAME"            >"$DEV1_SUITES_PATH/current.suite.name"
+echo "$DEV1_TASK_NAME"             >"$DEV1_PROJECT_PATH/current.task.name"
+echo "$DEV1_CODE_WORKSPACE_PATH"   >"$DEV1_PROJECT_PATH/current.code.workspace.path"
+echo "$DEV1_CMAKE_BUILD_TYPE"      >"$DEV1_PROJECT_PATH/current.cmake.build.type"
 
 echo "--------------------- Context Complete ---------------------"
 cd $_suitePath || return 1

@@ -1,6 +1,6 @@
 #!/bin/bash
   # shellcheck disable=SC1091
-_startingPoint=$(pwd)
+
 declare -g _configJson
 declare -g _taskJson
 declare -g _suiteName
@@ -14,6 +14,7 @@ declare -ga _tasksArray
 if [[ "$1" == "called" ]]; then
   shift
 else
+  _startingPoint=$(pwd)
   source "$DEV1_COMMANDS_PATH/utils/utilityFunctions"
   source "$DEV1_PATH/maintenance/010Globals" "$1" reset
   source "$DEV1_PATH/maintenance/020Config" "$1"
@@ -73,4 +74,6 @@ echo "Processing cMakeBuildTypes"
 # -------------------------------------------
 # shellcheck disable=SC2034
 state="Ending 062Builds"
-cd "$_startingPoint" || return 0
+if [[ "$_startingPoint" != "" ]]; then
+  cd "$_startingPoint" || return 0
+fi

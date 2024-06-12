@@ -6,7 +6,7 @@
   "configurations": [
     {
       "name": "bootstrap.py",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "src/bootstrap.py",
       "args":  [ "-v", "suites/fgdev.json", "/work/trees/fg/next" ],
@@ -14,7 +14,7 @@
       "justMyCode": true
     },    {
       "name": "log_labeled.py",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "src/log_labeled.py",
       "console": "integratedTerminal",

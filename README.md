@@ -2,7 +2,19 @@
 
 ## Cautions
 
-### DEV1 is alpha software
+### DEV1 was alpha software
+
+DEV1 is replaced by DEV0, a minimalist implementation of the ideas covered by DEV1
+
+DEV0 is much simpler and emphasizes  the dev0 commands, ide, build and run. 
+It includes examples of user-provided implementation scripts for building and running executables that are part of the application.
+
+More information on DEV0 can be found at: https://github.com/callahanp/dev0
+
+DEV1 will be removed from github by Dec 31, 2024
+
+DEV1 is fully obsolete and should not be used for new development.
+A utility is in the works for converting a DEV1 suite to a DEV0 suite.
 
 You can use DEV1 alongside what you usually use in a separate directory.
 
